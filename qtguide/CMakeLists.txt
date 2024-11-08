@@ -1,0 +1,2 @@
+add_subdirectory(helloqt)
+add_subdirectory(hellowidget)

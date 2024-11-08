@@ -3,5 +3,4 @@ project(qt-learning VERSION 0.0.1)
 include(E:/vcpkg/scripts/buildsystems/vcpkg.cmake)
 find_package(Qt5 REQUIRED Core Widgets)
 
-add_executable(helloqt qtguide/helloqt.cpp)
-target_link_libraries(helloqt Qt5::Core Qt5::Widgets)
+add_subdirectory(qtguide)
