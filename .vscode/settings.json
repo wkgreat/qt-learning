@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "qlabel": "cpp",
-        "qwidget": "cpp"
+        "qwidget": "cpp",
+        "qpainter": "cpp"
     }
 }
