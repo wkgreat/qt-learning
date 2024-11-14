@@ -1,6 +1,9 @@
 #include <Eigen/Dense>
 #include <QApplication>
+#include <QGridLayout>
+#include <QLabel>
 #include <QPainter>
+#include <QString>
 #include <QTimer>
 #include <QWidget>
 #include <cmath>
@@ -126,19 +129,22 @@ class SquareMesh {
   }
 };
 
-class MyWidget : public QWidget {
+class SquareAffineWidget : public QWidget {
  public:
-  SquareMesh square = SquareMesh::fromXYRadius(0, 0, 200);
+  SquareMesh square = SquareMesh::fromXYRadius(0, 0, 20);
 
-  MyWidget(QWidget* parent = nullptr) : QWidget(parent) {
-    this->setGeometry(0, 0, 1000, 1000);
+  enum class AFFINEOPS { TRANSLATE, ROTATE_X, ROTATE_Y, ROTATE_Z, SCALE };
 
-    QTimer* timer = new QTimer(this);                            // 创建定时器
-    timer->setInterval(10);                                      // 定时间隔单位ms
-    connect(timer, &QTimer::timeout, this, &MyWidget::refresh);  // 定时器关联refresh
-    timer->start();                                              // 定时启动
+  AFFINEOPS ops = AFFINEOPS::TRANSLATE;
+
+  SquareAffineWidget(QWidget* parent = nullptr) : QWidget(parent) {
+    this->setFixedSize(100, 100);
+    QTimer* timer = new QTimer(this);                                      // 创建定时器
+    timer->setInterval(10);                                                // 定时间隔单位ms
+    connect(timer, &QTimer::timeout, this, &SquareAffineWidget::refresh);  // 定时器关联refresh
+    timer->start();                                                        // 定时启动
   }
-
+  void setOps(AFFINEOPS ops) { this->ops = ops; }
   void refresh() { this->update(); }
   void paintAxis(QPainter* painter) {
     painter->setPen(QPen(QColor(255, 0, 0), 2));
@@ -151,25 +157,73 @@ class MyWidget : public QWidget {
   // 绘图函数
   void paintEvent(QPaintEvent* event) override {
     QPainter painter(this);
-    painter.eraseRect(0, 0, 1000, 1000);  // 清除画布
-    painter.translate(500, 500);          // 原点移动至画布中心
-    paintAxis(&painter);                  // 绘制坐标轴
-    square.draw(&painter);                // 绘制正方形
+    painter.eraseRect(0, 0, 100, 100);  // 清除画布
+    painter.translate(50, 50);          // 原点移动至画布中心
+    paintAxis(&painter);                // 绘制坐标轴
+    square.draw(&painter);              // 绘制正方形
 
-    // 正方形仿射变换
-    //  square.translate(1, 1, 1);
-    //  square.rotate_x(TO_RADIANS(1));
-    //  square.rotate_y(TO_RADIANS(1));
-    //  square.scale(1.1, 1.1, 1.1);
-    square.rotate_z(TO_RADIANS(1));  // 按z轴旋转
+    switch (this->ops) {
+      case AFFINEOPS::TRANSLATE:
+        square.translate(1, 1, 1);
+        break;
+      case AFFINEOPS::ROTATE_X:
+        square.rotate_x(TO_RADIANS(1));
+        break;
+      case AFFINEOPS::ROTATE_Y:
+        square.rotate_y(TO_RADIANS(1));
+        break;
+      case AFFINEOPS::ROTATE_Z:
+        square.rotate_z(TO_RADIANS(1));
+        break;
+      case AFFINEOPS::SCALE:
+        square.scale(1.001, 1.001, 1.001);
+        break;
+      default:
+        break;
+    }
   }
 };
 
 int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
 
-  MyWidget widget;
-  widget.show();
+  QWidget* window = new QWidget;
+  window->setWindowTitle("2D Affine Transformation");
+  window->setGeometry(0, 0, 1000, 200);
+  QGridLayout* layout = new QGridLayout;
+
+  QLabel label1("Translate");
+  layout->addWidget(&label1, 0, 0);
+  SquareAffineWidget widget1;
+  widget1.setOps(SquareAffineWidget::AFFINEOPS::TRANSLATE);
+  layout->addWidget(&widget1, 1, 0);
+
+  QLabel label2("Rotate by X");
+  layout->addWidget(&label2, 0, 1);
+  SquareAffineWidget widget2;
+  widget2.setOps(SquareAffineWidget::AFFINEOPS::ROTATE_X);
+  layout->addWidget(&widget2, 1, 1);
+
+  QLabel label3("Rotate by Y");
+  layout->addWidget(&label3, 0, 2);
+  SquareAffineWidget widget3;
+  widget3.setOps(SquareAffineWidget::AFFINEOPS::ROTATE_Y);
+  layout->addWidget(&widget3, 1, 2);
+
+  QLabel label4("Rotate by Z");
+  layout->addWidget(&label4, 0, 3);
+  SquareAffineWidget widget4;
+  widget4.setOps(SquareAffineWidget::AFFINEOPS::ROTATE_Z);
+  layout->addWidget(&widget4, 1, 3);
+
+  QLabel label5("Scale");
+  layout->addWidget(&label5, 0, 4);
+  SquareAffineWidget widget5;
+  widget5.setOps(SquareAffineWidget::AFFINEOPS::SCALE);
+  layout->addWidget(&widget5, 1, 4);
+
+  window->setLayout(layout);
+  window->show();
 
   return app.exec();
 }
