@@ -2,9 +2,12 @@
 #include <QApplication>
 #include <QGridLayout>
 #include <QLabel>
+#include <QObject>
 #include <QPainter>
+#include <QSlider>
 #include <QString>
 #include <QTimer>
+#include <QVBoxLayout>
 #include <QWidget>
 #include <cmath>
 #include <iostream>
@@ -162,7 +165,8 @@ class GLCamera {
 
   void lookAt(float fx, float fy, float fz, float tx, float ty, float tz) {
     // https://stackoverflow.com/a/33790309
-    Eigen::Vector3f d{tx - fx, ty - fy, tz - fz};
+    // TODO how to set z axis up
+    Eigen::Vector3f d(tx - fx, ty - fy, tz - fz);
     d.normalize();
     this->pitch = asinf(-d[1]);
     this->heading = atan2f(d[0], d[2]);
@@ -243,18 +247,15 @@ class GLScene {
   void setShowAxis(bool b) { this->showAxis = b; }
   void addAxis() {
     Mesh xAxis, yAxis, zAxis;
-    xAxis.pushVertice(-1000, 0, 0);
-    xAxis.pushVertice(1000, 0, 0);
+    xAxis.pushVertice(0, 0, 0);
+    xAxis.pushVertice(50, 0, 0);
     xAxis.addFacet({0, 1});
-    yAxis.pushVertice(0, -1000, 0);
-    yAxis.pushVertice(0, 1000, 0);
+    yAxis.pushVertice(0, 0, 0);
+    yAxis.pushVertice(0, 50, 0);
     yAxis.addFacet({0, 1});
-    zAxis.pushVertice(0, 0, -1000);
-    zAxis.pushVertice(0, 0, -500);
     zAxis.pushVertice(0, 0, 0);
-    zAxis.pushVertice(0, 0, 500);
-    zAxis.pushVertice(0, 0, 1000);
-    zAxis.addFacet({0, 1, 2, 3, 4});
+    zAxis.pushVertice(0, 0, 50);
+    zAxis.addFacet({0, 1});
     this->axis.push_back(std::move(xAxis));
     this->axis.push_back(std::move(yAxis));
     this->axis.push_back(std::move(zAxis));
@@ -336,12 +337,72 @@ class GLRenderWidget : public QWidget {
   void paintEvent(QPaintEvent* event) override {
     QPainter painter(this);
     painter.eraseRect(0, 0, this->width(), this->height());  // 清除画布
-    // scene.getObjs()[0].rotate_x(MathUtils::toRadians(1));
-    // scene.getObjs()[0].rotate_y(MathUtils::toRadians(1));
     scene.getObjs()[0].rotate_z(MathUtils::toRadians(1));
     scene.draw(painter);
   }
 };
+
+class SceneHelper : public QWidget {
+ public:
+  GLScene* scene;
+  QLabel label1;
+  QLabel label2;
+  QLabel label3;
+  QSlider slider1;
+  QSlider slider2;
+  QSlider slider3;
+  QVBoxLayout layout;
+  SceneHelper(QWidget* parent = nullptr) : QWidget(parent) {}
+  void setScene(GLScene* scene) {
+    this->scene = scene;
+
+    label1.setText("Heading");
+    label2.setText("Pitch");
+    label3.setText("Roll");
+
+    slider1.setOrientation(Qt::Horizontal);
+    slider1.setMinimum(-360);
+    slider1.setMaximum(360);
+    slider1.setSingleStep(1);
+    slider1.setValue(QTGL::MathUtils::toDegree(this->scene->getCamera().getHeading()));
+    slider1.setTracking(true);
+    connect(&slider1, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setHeading(QTGL::MathUtils::toRadians(value));
+    });
+
+    slider2.setOrientation(Qt::Horizontal);
+    slider2.setMinimum(-360);
+    slider2.setMaximum(360);
+    slider2.setSingleStep(1);
+    slider2.setValue(QTGL::MathUtils::toDegree(this->scene->getCamera().getPitch()));
+    slider2.setTracking(true);
+    connect(&slider2, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setPitch(QTGL::MathUtils::toRadians(value));
+    });
+
+    slider3.setOrientation(Qt::Horizontal);
+    slider3.setMinimum(-360);
+    slider3.setMaximum(360);
+    slider3.setSingleStep(1);
+    slider3.setValue(QTGL::MathUtils::toDegree(this->scene->getCamera().getRool()));
+    slider3.setTracking(true);
+
+    connect(&slider3, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setRoll(QTGL::MathUtils::toRadians(value));
+    });
+
+    layout.addWidget(&label1);
+    layout.addWidget(&slider1);
+    layout.addWidget(&label2);
+    layout.addWidget(&slider2);
+    layout.addWidget(&label3);
+    layout.addWidget(&slider3);
+
+    this->setLayout(&layout);
+  }
+  ~SceneHelper() = default;
+};
+
 }  // namespace QTGL
 
 int main(int argc, char* argv[]) {
@@ -358,6 +419,10 @@ int main(int argc, char* argv[]) {
   widget.getScene().addObj(mesh);
   widget.getScene().setShowAxis(true);
   layout->addWidget(&widget, 0, 0);
+
+  QTGL::SceneHelper helper;
+  helper.setScene(&(widget.getScene()));
+  layout->addWidget(&helper, 1, 0);
 
   window->setLayout(layout);
   window->show();

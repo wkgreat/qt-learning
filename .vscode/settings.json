@@ -81,6 +81,9 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "qgridlayout": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "qslider": "cpp",
+        "qhboxlayout": "cpp",
+        "qvboxlayout": "cpp"
     }
 }
