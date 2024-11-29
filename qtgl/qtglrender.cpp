@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 
 namespace QTGL {
@@ -79,6 +80,8 @@ class Mesh {
     vertices.row(vertices.rows() - 1) = v;
   }
   void addFacet(std::vector<int> facet) { facets.push_back(facet); }
+  void emplaceFacet(std::vector<int>& facet) { facets.push_back(facet); }
+  void emplaceFacet(std::vector<int>&& facet) { facets.push_back(std::move(facet)); }
 
   static Mesh makeCube(int s) {
     Mesh mesh;
@@ -101,6 +104,64 @@ class Mesh {
     return mesh;
   }
 
+  static std::vector<Mesh> readFromObjFile(std::string fpath) {
+    std::vector<Mesh> meshes;
+    std::ifstream ifs;
+    ifs.open(fpath, std::ios::in);
+
+    if (!ifs.is_open()) {
+      return {};
+    }
+
+    char buf[1024] = {0};
+    bool newMesh = true;
+    Mesh* mesh = nullptr;
+
+    int i = 0;
+
+    while (ifs.getline(buf, sizeof(buf))) {
+      if (i % 1000 == 0) {
+        std::cout << i << std::endl;
+      }
+      i++;
+      if (buf[0] == 'v' && buf[1] == ' ') {
+        if (newMesh) {
+          if (mesh) {
+            meshes.push_back(*mesh);
+            delete mesh;
+            mesh = nullptr;
+          }
+          mesh = new Mesh;
+        }
+        QString line(buf);
+        QStringList strlst = line.split(" ");
+
+        mesh->pushVertice(strlst[1].toFloat(), strlst[2].toFloat(), strlst[3].toFloat());
+        newMesh = false;
+      } else {
+        if (buf[0] == 'f' && buf[1] == ' ') {
+          QString line(buf);
+          QStringList strlst = line.split(" ");
+          std::vector<int> facet;
+          for (int i = 1; i < strlst.length(); ++i) {
+            facet.push_back(strlst[i].split("/")[0].toInt() - 1);
+          }
+          facet.push_back(facet[0]);
+          mesh->emplaceFacet(std::move(facet));
+        }
+        newMesh = true;
+      }
+    }
+
+    if (mesh) {
+      meshes.push_back(*mesh);
+      delete mesh;
+      mesh = nullptr;
+    }
+
+    return meshes;
+  }
+
   void rotate_x(float a) { this->vertices = AffineUtils::rotate_x(this->vertices, a); }
   void rotate_y(float a) { this->vertices = AffineUtils::rotate_y(this->vertices, a); }
   void rotate_z(float a) { this->vertices = AffineUtils::rotate_z(this->vertices, a); }
@@ -114,6 +175,15 @@ class Mesh {
   void draw(QPainter& painter) {
     for (auto& facet : facets) {
       for (int i = 1; i < facet.size(); ++i) {
+        int nrows = vertices.rows();
+        if (facet[i - 1] < 0 || facet[i - 1] >= nrows) {
+          std::cout << "WARNING: OUT OF ROWS1, " << facet[i - 1] << "," << nrows << std::endl;
+          continue;
+        }
+        if (facet[i] < 0 || facet[i] >= nrows) {
+          std::cout << "WARNING: OUT OF ROWS2, " << facet[i] << "," << nrows << std::endl;
+          continue;
+        }
         Vertice p1 = vertices.row(facet[i - 1]);
         Vertice p2 = vertices.row(facet[i]);
         painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
@@ -170,7 +240,7 @@ class GLCamera {
     d.normalize();
     this->pitch = asinf(-d[1]);
     this->heading = atan2f(d[0], d[2]);
-    this->roll = MathUtils::toRadians(240);
+    this->roll = 0;
     this->setPosition(fx, fy, fz);
   }
 
@@ -337,7 +407,7 @@ class GLRenderWidget : public QWidget {
   void paintEvent(QPaintEvent* event) override {
     QPainter painter(this);
     painter.eraseRect(0, 0, this->width(), this->height());  // 清除画布
-    scene.getObjs()[0].rotate_z(MathUtils::toRadians(1));
+    scene.getObjs()[0].rotate_y(MathUtils::toRadians(1));
     scene.draw(painter);
   }
 };
@@ -477,9 +547,17 @@ int main(int argc, char* argv[]) {
 
   QTGL::GLRenderWidget widget;
   widget.setFixedSize(600, 600);
-  QTGL::Mesh mesh = QTGL::Mesh::makeCube(50);
-  widget.getScene().getCamera().lookAt(200, 200, 200, 0, 0, 0);
-  widget.getScene().addObj(mesh);
+
+  // QTGL::Mesh mesh = QTGL::Mesh::makeCube(50);
+  // widget.getScene().addObj(mesh);
+
+  std::vector<QTGL::Mesh> objs =
+      QTGL::Mesh::readFromObjFile("E:\\codes\\practice\\qt-learning\\data\\teapot.obj");
+  for (QTGL::Mesh& mesh : objs) {
+    widget.getScene().addObj(mesh);
+  }
+
+  widget.getScene().getCamera().lookAt(5, 5, 5, 0, 0, 0);
   widget.getScene().setShowAxis(true);
   layout->addWidget(&widget, 0, 0);
 

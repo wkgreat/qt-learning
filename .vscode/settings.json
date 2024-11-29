@@ -84,6 +84,7 @@
         "core": "cpp",
         "qslider": "cpp",
         "qhboxlayout": "cpp",
-        "qvboxlayout": "cpp"
+        "qvboxlayout": "cpp",
+        "fstream": "cpp"
     }
 }
