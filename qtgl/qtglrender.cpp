@@ -156,12 +156,12 @@ class GLCamera {
   void setHeading(float heading) { this->heading = heading; }
   void setPitch(float pitch) { this->pitch = pitch; }
   void setRoll(float roll) { this->roll = roll; }
-  float getPosX() const { return pos_x; }
-  float getPosY() const { return pos_y; }
-  float getPosZ() const { return pos_z; }
-  float getHeading() const { return heading; }
-  float getPitch() const { return pitch; }
-  float getRool() const { return roll; }
+  float getPosX() const { return this->pos_x; }
+  float getPosY() const { return this->pos_y; }
+  float getPosZ() const { return this->pos_z; }
+  float getHeading() const { return this->heading; }
+  float getPitch() const { return this->pitch; }
+  float getRool() const { return this->roll; }
 
   void lookAt(float fx, float fy, float fz, float tx, float ty, float tz) {
     // https://stackoverflow.com/a/33790309
@@ -170,7 +170,7 @@ class GLCamera {
     d.normalize();
     this->pitch = asinf(-d[1]);
     this->heading = atan2f(d[0], d[2]);
-    this->roll = 0;
+    this->roll = MathUtils::toRadians(240);
     this->setPosition(fx, fy, fz);
   }
 
@@ -351,14 +351,28 @@ class SceneHelper : public QWidget {
   QSlider slider1;
   QSlider slider2;
   QSlider slider3;
-  QVBoxLayout layout;
+
+  QLabel label4;
+  QLabel label5;
+  QLabel label6;
+  QSlider slider4;
+  QSlider slider5;
+  QSlider slider6;
+
+  QGridLayout layout;
   SceneHelper(QWidget* parent = nullptr) : QWidget(parent) {}
   void setScene(GLScene* scene) {
     this->scene = scene;
 
-    label1.setText("Heading");
-    label2.setText("Pitch");
-    label3.setText("Roll");
+    label1.setText(QString("Heading: ") + QString::number(QTGL::MathUtils::toDegree(
+                                              this->scene->getCamera().getHeading())));
+    label2.setText(QString("Pitch: ") +
+                   QString::number(QTGL::MathUtils::toDegree(this->scene->getCamera().getPitch())));
+    label3.setText(QString("Roll: ") +
+                   QString::number(QTGL::MathUtils::toDegree(this->scene->getCamera().getRool())));
+    label4.setText(QString("PosX: ") + QString::number(this->scene->getCamera().getPosX()));
+    label5.setText(QString("PosY: ") + QString::number(this->scene->getCamera().getPosY()));
+    label6.setText(QString("PosZ: ") + QString::number(this->scene->getCamera().getPosZ()));
 
     slider1.setOrientation(Qt::Horizontal);
     slider1.setMinimum(-360);
@@ -368,6 +382,8 @@ class SceneHelper : public QWidget {
     slider1.setTracking(true);
     connect(&slider1, &QSlider::valueChanged, [&](int value) {
       this->scene->getCamera().setHeading(QTGL::MathUtils::toRadians(value));
+      label1.setText(QString("Heading: ") + QString::number(QTGL::MathUtils::toDegree(
+                                                this->scene->getCamera().getHeading())));
     });
 
     slider2.setOrientation(Qt::Horizontal);
@@ -378,6 +394,8 @@ class SceneHelper : public QWidget {
     slider2.setTracking(true);
     connect(&slider2, &QSlider::valueChanged, [&](int value) {
       this->scene->getCamera().setPitch(QTGL::MathUtils::toRadians(value));
+      label2.setText(QString("Pitch: ") + QString::number(QTGL::MathUtils::toDegree(
+                                              this->scene->getCamera().getPitch())));
     });
 
     slider3.setOrientation(Qt::Horizontal);
@@ -389,14 +407,59 @@ class SceneHelper : public QWidget {
 
     connect(&slider3, &QSlider::valueChanged, [&](int value) {
       this->scene->getCamera().setRoll(QTGL::MathUtils::toRadians(value));
+      label3.setText(QString("Roll: ") + QString::number(QTGL::MathUtils::toDegree(
+                                             this->scene->getCamera().getRool())));
     });
 
-    layout.addWidget(&label1);
-    layout.addWidget(&slider1);
-    layout.addWidget(&label2);
-    layout.addWidget(&slider2);
-    layout.addWidget(&label3);
-    layout.addWidget(&slider3);
+    slider4.setOrientation(Qt::Horizontal);
+    slider4.setMinimum(-600);
+    slider4.setMaximum(600);
+    slider4.setSingleStep(1);
+    slider4.setValue(this->scene->getCamera().getPosX());
+    slider4.setTracking(true);
+
+    connect(&slider4, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setPosX(value);
+      label4.setText(QString("PosX: ") + QString::number(this->scene->getCamera().getPosX()));
+    });
+
+    slider5.setOrientation(Qt::Horizontal);
+    slider5.setMinimum(-600);
+    slider5.setMaximum(600);
+    slider5.setSingleStep(1);
+    slider5.setValue(this->scene->getCamera().getPosY());
+    slider5.setTracking(true);
+
+    connect(&slider5, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setPosY(value);
+      label5.setText(QString("PosY: ") + QString::number(this->scene->getCamera().getPosY()));
+    });
+
+    slider6.setOrientation(Qt::Horizontal);
+    slider6.setMinimum(-600);
+    slider6.setMaximum(600);
+    slider6.setSingleStep(1);
+    slider6.setValue(this->scene->getCamera().getPosZ());
+    slider6.setTracking(true);
+
+    connect(&slider6, &QSlider::valueChanged, [&](int value) {
+      this->scene->getCamera().setPosZ(value);
+      label6.setText(QString("PosZ: ") + QString::number(this->scene->getCamera().getPosZ()));
+    });
+
+    layout.addWidget(&label1, 0, 0);
+    layout.addWidget(&slider1, 0, 1);
+    layout.addWidget(&label2, 1, 0);
+    layout.addWidget(&slider2, 1, 1);
+    layout.addWidget(&label3, 2, 0);
+    layout.addWidget(&slider3, 2, 1);
+
+    layout.addWidget(&label4, 0, 2);
+    layout.addWidget(&slider4, 0, 3);
+    layout.addWidget(&label5, 1, 2);
+    layout.addWidget(&slider5, 1, 3);
+    layout.addWidget(&label6, 2, 2);
+    layout.addWidget(&slider6, 2, 3);
 
     this->setLayout(&layout);
   }
@@ -415,7 +478,7 @@ int main(int argc, char* argv[]) {
   QTGL::GLRenderWidget widget;
   widget.setFixedSize(600, 600);
   QTGL::Mesh mesh = QTGL::Mesh::makeCube(50);
-  widget.getScene().getCamera().lookAt(300, 300, 300, 0, 0, 0);
+  widget.getScene().getCamera().lookAt(200, 200, 200, 0, 0, 0);
   widget.getScene().addObj(mesh);
   widget.getScene().setShowAxis(true);
   layout->addWidget(&widget, 0, 0);
