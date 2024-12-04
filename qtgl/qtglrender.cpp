@@ -257,14 +257,44 @@ class GLCamera {
     return viewMtx;
   }
 };
+
+enum class GLProjectionMode {
+  ORTHOGRAPHIC,  // 正射投影
+  PRESPECTIVE    // 透视投影
+};
+
 class GLProjection {
  public:
   float height, width;
   float near, far;
-  GLProjection() : height(768), width(1024), near(1), far(100) {}
-  GLProjection(float height, float width, float near, float far)
-      : height(height), width(width), near(near), far(far) {}
-  Eigen::Matrix4f projMatrix() {
+  GLProjectionMode mode;
+  GLProjection()
+      : height(768), width(1024), near(1), far(100), mode(GLProjectionMode::PRESPECTIVE) {}
+  GLProjection(float height, float width, float near, float far, GLProjectionMode mode)
+      : height(height), width(width), near(near), far(far), mode(mode) {}
+  Eigen::Matrix4f orthographicProjMatrix() {
+    float hfov = MathUtils::PI / 3;
+    float vfov = hfov * (height / width);
+    float right = tan(hfov / 2) * near;
+    float left = -right;
+    float top = tan(vfov / 2) * near;
+    float bottom = -top;
+
+    float m00 = 2 / (right - left);
+    float m11 = 2 / (top - bottom);
+    float m22 = 2 / (near - far);
+    float m30 = -(right + left) / (right - left);
+    float m31 = -(top + bottom) / (top - bottom);
+    float m32 = -(near + far) / (near - far);
+
+    Eigen::Matrix4f projMtx;
+    projMtx << m00, 0, 0, 0,  //
+        0, m11, 0, 0,         //
+        0, 0, m22, 0,         //
+        m30, m31, m32, 1;
+    return projMtx;
+  }
+  Eigen::Matrix4f perspectiveProjMatrix() {
     float hfov = MathUtils::PI / 3;
     float vfov = hfov * (height / width);
     float right = tan(hfov / 2) * near;
@@ -281,6 +311,13 @@ class GLProjection {
         0, 0, m22, 1,         //
         0, 0, m32, 0;
     return projMtx;
+  }
+  Eigen::Matrix4f projMatrix() {
+    if (mode == GLProjectionMode::ORTHOGRAPHIC) {
+      return orthographicProjMatrix();
+    } else {
+      return perspectiveProjMatrix();
+    }
   }
 };
 class GLScene {
@@ -559,6 +596,7 @@ int main(int argc, char* argv[]) {
 
   widget.getScene().getCamera().lookAt(5, 5, 5, 0, 0, 0);
   widget.getScene().setShowAxis(true);
+  widget.getScene().getProjection().mode = QTGL::GLProjectionMode::PRESPECTIVE;
   layout->addWidget(&widget, 0, 0);
 
   QTGL::SceneHelper helper;
