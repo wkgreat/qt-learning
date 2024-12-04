@@ -332,7 +332,7 @@ class GLScene {
   }
   void addObj(Mesh& mesh) { objs.push_back(mesh); }
   std::vector<Mesh>& getObjs() { return this->objs; }
-  Eigen::Matrix4f viewMatrix() {
+  Eigen::Matrix4f viewportMatrix() {
     float hw = this->viewWidth / 2;
     float hh = this->viewHeight / 2;
     Eigen::Matrix4f viewMtx;
@@ -353,7 +353,7 @@ class GLScene {
     // w归一化
     viewVertices.array().colwise() /= viewVertices.col(viewVertices.cols() - 1).array();
     // 视口变换
-    viewVertices = viewVertices * viewMatrix();
+    viewVertices = viewVertices * viewportMatrix();
     viewMesh.vertices = viewVertices;
     viewMesh.facets = mesh.facets;
     return viewMesh;
