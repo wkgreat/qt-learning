@@ -269,7 +269,7 @@ class GLProjection {
   float near, far;
   GLProjectionMode mode;
   GLProjection()
-      : height(768), width(1024), near(1), far(100), mode(GLProjectionMode::PRESPECTIVE) {}
+      : height(768), width(1024), near(0.1f), far(100), mode(GLProjectionMode::PRESPECTIVE) {}
   GLProjection(float height, float width, float near, float far, GLProjectionMode mode)
       : height(height), width(width), near(near), far(far), mode(mode) {}
   Eigen::Matrix4f orthographicProjMatrix() {
@@ -594,7 +594,7 @@ int main(int argc, char* argv[]) {
     widget.getScene().addObj(mesh);
   }
 
-  widget.getScene().getCamera().lookAt(5, 5, 5, 0, 0, 0);
+  widget.getScene().getCamera().lookAt(50, 50, 50, 0, 0, 0);
   widget.getScene().setShowAxis(true);
   widget.getScene().getProjection().mode = QTGL::GLProjectionMode::PRESPECTIVE;
   layout->addWidget(&widget, 0, 0);
