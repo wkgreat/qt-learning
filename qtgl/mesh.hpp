@@ -8,43 +8,74 @@
 #include "affineutils.hpp"
 
 namespace qtgl {
-class Mesh {
+
+class GLObject {
  public:
   Vertices vertices;
-  std::vector<std::vector<int>> facets;
-  Mesh() {}
+  GLObject() = default;
+  virtual ~GLObject() = default;
+  GLObject(const GLObject& obj) { vertices = obj.vertices; }
+  virtual GLObject* clone() = 0;
+
   void pushVertice(float x, float y, float z) {
     Vertice v(x, y, z, 1);
     vertices.conservativeResize(vertices.rows() + 1, vertices.cols());
     vertices.row(vertices.rows() - 1) = v;
   }
-  void addFacet(std::vector<int> facet) { facets.push_back(facet); }
-  void emplaceFacet(std::vector<int>& facet) { facets.push_back(facet); }
-  void emplaceFacet(std::vector<int>&& facet) { facets.push_back(std::move(facet)); }
+  void rotate_x(float a) { this->vertices = AffineUtils::rotate_x(this->vertices, a); }
+  void rotate_y(float a) { this->vertices = AffineUtils::rotate_y(this->vertices, a); }
+  void rotate_z(float a) { this->vertices = AffineUtils::rotate_z(this->vertices, a); }
+  void translate(float x, float y, float z) {
+    this->vertices = AffineUtils::translate(this->vertices, x, y, z);
+  }
+  void scale(float x, float y, float z) {
+    this->vertices = AffineUtils::scale(this->vertices, x, y, z);
+  }
+  virtual void draw(QPainter& painter) = 0;
+};
 
-  static Mesh makeCube(int s) {
-    Mesh mesh;
-    mesh.pushVertice(-s, -s, -s);  // 0
-    mesh.pushVertice(-s, s, -s);   // 1
-    mesh.pushVertice(s, s, -s);    // 2
-    mesh.pushVertice(s, -s, -s);   // 3
+class GLLine : public GLObject {
+ public:
+  GLLine() = default;
+  ~GLLine() = default;
+  GLLine(const GLLine& line) : GLObject(line) {}
+  virtual GLObject* clone() {
+    GLLine* p = new GLLine;
+    p->vertices = this->vertices;
+    return p;
+  }
+  void draw(QPainter& painter) {
+    int n = vertices.rows();
+    for (int i = 1; i < n; ++i) {
+      Vertice p1 = vertices.row(i - 1);
+      Vertice p2 = vertices.row(i);
+      painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
+    }
+    Vertice p1 = vertices.row(n - 1);
+    Vertice p2 = vertices.row(0);
+    painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
+  }
+};
 
-    mesh.pushVertice(-s, -s, s);  // 4
-    mesh.pushVertice(-s, s, s);   // 5
-    mesh.pushVertice(s, s, s);    // 6
-    mesh.pushVertice(s, -s, s);   // 7
-
-    mesh.addFacet({0, 1, 2, 3, 0});
-    mesh.addFacet({4, 5, 6, 7, 4});
-    mesh.addFacet({0, 1, 5, 4, 0});
-    mesh.addFacet({1, 2, 6, 5, 1});
-    mesh.addFacet({2, 3, 7, 6, 2});
-    mesh.addFacet({0, 3, 7, 4, 0});
-    return mesh;
+class GLMesh : public GLObject {
+ public:
+  Indices3 indices;
+  GLMesh() = default;
+  ~GLMesh() = default;
+  GLMesh(const GLMesh& mesh) : GLObject(mesh) { indices = mesh.indices; }
+  GLObject* clone() {
+    GLMesh* p = new GLMesh;
+    p->indices = this->indices;
+    p->vertices = this->vertices;
+    return p;
+  }
+  void addIndex3(Index3 idx) {
+    indices.conservativeResize(indices.rows() + 1, indices.cols());
+    indices.row(indices.rows() - 1) = idx;
   }
 
-  static std::vector<Mesh> readFromObjFile(std::string fpath) {
-    std::vector<Mesh> meshes;
+  static std::vector<GLMesh> readFromObjFile(std::string fpath) {
+    std::vector<GLMesh> meshes;
     std::ifstream ifs;
     ifs.open(fpath, std::ios::in);
 
@@ -54,7 +85,7 @@ class Mesh {
 
     char buf[1024] = {0};
     bool newMesh = true;
-    Mesh* mesh = nullptr;
+    GLMesh* mesh = nullptr;
 
     int i = 0;
 
@@ -70,7 +101,7 @@ class Mesh {
             delete mesh;
             mesh = nullptr;
           }
-          mesh = new Mesh;
+          mesh = new GLMesh;
         }
         QString line(buf);
         QStringList strlst = line.split(" ");
@@ -81,12 +112,12 @@ class Mesh {
         if (buf[0] == 'f' && buf[1] == ' ') {
           QString line(buf);
           QStringList strlst = line.split(" ");
-          std::vector<int> facet;
+          std::vector<int> v;
           for (int i = 1; i < strlst.length(); ++i) {
-            facet.push_back(strlst[i].split("/")[0].toInt() - 1);
+            v.push_back(strlst[i].split("/")[0].toInt() - 1);
           }
-          facet.push_back(facet[0]);
-          mesh->emplaceFacet(std::move(facet));
+          Index3 idx{v[0], v[1], v[2]};
+          mesh->addIndex3(idx);
         }
         newMesh = true;
       }
@@ -101,32 +132,21 @@ class Mesh {
     return meshes;
   }
 
-  void rotate_x(float a) { this->vertices = AffineUtils::rotate_x(this->vertices, a); }
-  void rotate_y(float a) { this->vertices = AffineUtils::rotate_y(this->vertices, a); }
-  void rotate_z(float a) { this->vertices = AffineUtils::rotate_z(this->vertices, a); }
-  void translate(float x, float y, float z) {
-    this->vertices = AffineUtils::translate(this->vertices, x, y, z);
-  }
-  void scale(float x, float y, float z) {
-    this->vertices = AffineUtils::scale(this->vertices, x, y, z);
-  }
-
   void draw(QPainter& painter) {
-    for (auto& facet : facets) {
-      for (int i = 1; i < facet.size(); ++i) {
-        int nrows = vertices.rows();
-        if (facet[i - 1] < 0 || facet[i - 1] >= nrows) {
-          std::cout << "WARNING: OUT OF ROWS1, " << facet[i - 1] << "," << nrows << std::endl;
-          continue;
-        }
-        if (facet[i] < 0 || facet[i] >= nrows) {
-          std::cout << "WARNING: OUT OF ROWS2, " << facet[i] << "," << nrows << std::endl;
-          continue;
-        }
-        Vertice p1 = vertices.row(facet[i - 1]);
-        Vertice p2 = vertices.row(facet[i]);
-        painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
-      }
+    int n = indices.rows();
+    for (int i = 0; i < n; ++i) {
+      Index3 idx = indices.row(i);
+      Vertice p1 = vertices.row(idx[0]);
+      Vertice p2 = vertices.row(idx[1]);
+      painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
+
+      p1 = vertices.row(idx[1]);
+      p2 = vertices.row(idx[2]);
+      painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
+
+      p1 = vertices.row(idx[2]);
+      p2 = vertices.row(idx[0]);
+      painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
     }
   }
 };

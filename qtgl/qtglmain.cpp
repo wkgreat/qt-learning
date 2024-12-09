@@ -14,14 +14,15 @@ int main(int argc, char* argv[]) {
   // QTGL::Mesh mesh = QTGL::Mesh::makeCube(50);
   // widget.getScene().addObj(mesh);
 
-  std::vector<qtgl::Mesh> objs =
-      qtgl::Mesh::readFromObjFile("E:\\codes\\practice\\qt-learning\\data\\teapot.obj");
-  for (qtgl::Mesh& mesh : objs) {
-    widget.getScene().addObj(mesh);
+  std::vector<qtgl::GLMesh> objs =
+      qtgl::GLMesh::readFromObjFile("E:\\codes\\practice\\qt-learning\\data\\teapot.obj");
+  for (qtgl::GLMesh& mesh : objs) {
+    qtgl::GLObject* obj = mesh.clone();
+    widget.getScene().addObj(obj);
   }
 
   widget.getScene().getCamera().lookAt(50, 50, 50, 0, 0, 0);
-  widget.getScene().setShowAxis(true);
+  // widget.getScene().setShowAxis(true);
   widget.getScene().getProjection().mode = qtgl::GLProjectionMode::PRESPECTIVE;
   layout->addWidget(&widget, 0, 0);
 

@@ -11,9 +11,9 @@ class GLScene {
   float viewWidth;
   GLCamera camera;
   GLProjection projection;
-  std::vector<Mesh> objs;
+  std::vector<GLObject*> objs;
   bool showAxis;
-  std::vector<Mesh> axis;
+  std::vector<GLObject*> axis;
 
  public:
   GLScene(float viewHeight = 768.0, float viewWidth = 1024.0)
@@ -21,6 +21,14 @@ class GLScene {
     this->projection.height = viewHeight;
     this->projection.width = viewWidth;
     addAxis();
+  }
+  ~GLScene() {
+    for (GLObject* obj : objs) {
+      delete obj;
+    }
+    for (GLObject* obj : axis) {
+      delete obj;
+    }
   }
   GLCamera& getCamera() { return this->camera; }
   GLProjection& getProjection() { return this->projection; }
@@ -38,22 +46,25 @@ class GLScene {
   }
   void setShowAxis(bool b) { this->showAxis = b; }
   void addAxis() {
-    Mesh xAxis, yAxis, zAxis;
-    xAxis.pushVertice(0, 0, 0);
-    xAxis.pushVertice(50, 0, 0);
-    xAxis.addFacet({0, 1});
-    yAxis.pushVertice(0, 0, 0);
-    yAxis.pushVertice(0, 50, 0);
-    yAxis.addFacet({0, 1});
-    zAxis.pushVertice(0, 0, 0);
-    zAxis.pushVertice(0, 0, 50);
-    zAxis.addFacet({0, 1});
-    this->axis.push_back(std::move(xAxis));
-    this->axis.push_back(std::move(yAxis));
-    this->axis.push_back(std::move(zAxis));
+    GLLine* xAxis = new GLLine;
+    GLLine* yAxis = new GLLine;
+    GLLine* zAxis = new GLLine;
+
+    xAxis->pushVertice(0, 0, 0);
+    xAxis->pushVertice(50, 0, 0);
+
+    yAxis->pushVertice(0, 0, 0);
+    yAxis->pushVertice(0, 50, 0);
+
+    zAxis->pushVertice(0, 0, 0);
+    zAxis->pushVertice(0, 0, 50);
+
+    this->axis.push_back(xAxis);
+    this->axis.push_back(yAxis);
+    this->axis.push_back(zAxis);
   }
-  void addObj(Mesh& mesh) { objs.push_back(mesh); }
-  std::vector<Mesh>& getObjs() { return this->objs; }
+  void addObj(GLObject* obj) { objs.push_back(obj); }
+  std::vector<GLObject*>& getObjs() { return this->objs; }
   Eigen::Matrix4f viewportMatrix() {
     float hw = this->viewWidth / 2;
     float hh = this->viewHeight / 2;
@@ -65,42 +76,48 @@ class GLScene {
     return viewMtx;
   }
 
-  Mesh meshToView(Mesh& mesh) {
-    Mesh viewMesh;
-    Vertices viewVertices = mesh.vertices;
+  GLObject* meshToView(GLObject* obj) {
+    GLObject* viewObj = obj->clone();
     // View矩阵
-    viewVertices = viewVertices * camera.viewMatrix();
+    viewObj->vertices = viewObj->vertices * camera.viewMatrix();
     // 投影矩阵
-    viewVertices = viewVertices * projection.projMatrix();
+    viewObj->vertices = viewObj->vertices * projection.projMatrix();
     // w归一化
-    viewVertices.array().colwise() /= viewVertices.col(viewVertices.cols() - 1).array();
+    viewObj->vertices.array().colwise() /=
+        viewObj->vertices.col(viewObj->vertices.cols() - 1).array();
     // 视口变换
-    viewVertices = viewVertices * viewportMatrix();
-    viewMesh.vertices = viewVertices;
-    viewMesh.facets = mesh.facets;
-    return viewMesh;
+    viewObj->vertices = viewObj->vertices * viewportMatrix();
+    return viewObj;
   }
   void draw(QPainter& painter) {
     if (this->showAxis) {
       QPen oldpen = painter.pen();
+      GLObject* viewObj;
       // x
       painter.setPen(QPen(QColor(255, 0, 0), 2));
-      Mesh viewMesh = meshToView(axis[0]);
-      viewMesh.draw(painter);
+      viewObj = meshToView(axis[0]);
+      viewObj->draw(painter);
+      delete viewObj;
+      viewObj = nullptr;
       // y
       painter.setPen(QPen(QColor(0, 255, 0), 2));
-      viewMesh = meshToView(axis[1]);
-      viewMesh.draw(painter);
+      viewObj = meshToView(axis[1]);
+      viewObj->draw(painter);
+      delete viewObj;
+      viewObj = nullptr;
       // z
       painter.setPen(QPen(QColor(0, 0, 255), 2));
-      viewMesh = meshToView(axis[2]);
-      viewMesh.draw(painter);
+      viewObj = meshToView(axis[2]);
+      viewObj->draw(painter);
+      delete viewObj;
+      viewObj = nullptr;
       // reset pen
       painter.setPen(oldpen);
     }
-    for (Mesh& mesh : objs) {
-      Mesh viewMesh = meshToView(mesh);
-      viewMesh.draw(painter);
+    for (GLObject* obj : objs) {
+      GLObject* viewObj = meshToView(obj);
+      viewObj->draw(painter);
+      delete viewObj;
     }
   }
 };
