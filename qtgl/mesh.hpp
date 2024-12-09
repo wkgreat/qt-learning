@@ -59,19 +59,29 @@ class GLLine : public GLObject {
 
 class GLMesh : public GLObject {
  public:
+  const static Color defaultColor;
   Indices3 indices;
+  std::vector<std::vector<Color>> colors;
   GLMesh() = default;
   ~GLMesh() = default;
-  GLMesh(const GLMesh& mesh) : GLObject(mesh) { indices = mesh.indices; }
+  GLMesh(const GLMesh& mesh) : GLObject(mesh) {
+    indices = mesh.indices;
+    colors = mesh.colors;
+  }
   GLObject* clone() {
     GLMesh* p = new GLMesh;
     p->indices = this->indices;
     p->vertices = this->vertices;
+    p->colors = this->colors;
     return p;
   }
-  void addIndex3(Index3 idx) {
+  void addIndex3(Index3 idx) { addIndex3(idx, defaultColor, defaultColor, defaultColor); }
+
+  void addIndex3(Index3 idx, Color clr0, Color clr1, Color clr2) {
     indices.conservativeResize(indices.rows() + 1, indices.cols());
     indices.row(indices.rows() - 1) = idx;
+    std::vector<Color> tricolor{clr0, clr1, clr2};
+    colors.push_back(std::move(tricolor));
   }
 
   static std::vector<GLMesh> readFromObjFile(std::string fpath) {
@@ -117,7 +127,7 @@ class GLMesh : public GLObject {
             v.push_back(strlst[i].split("/")[0].toInt() - 1);
           }
           Index3 idx{v[0], v[1], v[2]};
-          mesh->addIndex3(idx);
+          mesh->addIndex3(idx, Color::random(), Color::random(), Color::random());
         }
         newMesh = true;
       }
@@ -132,7 +142,44 @@ class GLMesh : public GLObject {
     return meshes;
   }
 
-  void draw(QPainter& painter) {
+  void rasterize(QPainter& painter) {
+    int n = indices.rows();
+    for (int i = 0; i < n; ++i) {
+      Index3 idx = indices.row(i);
+      Vertice p0 = vertices.row(idx[0]);
+      Vertice p1 = vertices.row(idx[1]);
+      Vertice p2 = vertices.row(idx[2]);
+      Triangle t(p0[0], p0[1], p1[0], p1[1], p2[0], p2[1]);
+      std::vector<Color> clrs = colors[i];
+      rasterizeTriangle(t, clrs, painter);
+    }
+  }
+
+  void rasterizeTriangle(Triangle& t, std::vector<Color>& clrs, QPainter& painter) {
+    // mbr
+    int xmin = static_cast<int>(std::min(std::min(t.x0, t.x1), t.x2));
+    int xmax = static_cast<int>(std::max(std::max(t.x0, t.x1), t.x2));
+    int ymin = static_cast<int>(std::min(std::min(t.y0, t.y1), t.y2));
+    int ymax = static_cast<int>(std::max(std::max(t.y0, t.y1), t.y2));
+
+    for (int x = xmin; x <= xmax; ++x) {
+      for (int y = ymin; y <= ymax; ++y) {
+        Triangle::BarycentricCoordnates coord = t.resovleBarycentricCoordnates(x, y);
+        if (coord.alpha >= 0 && coord.beta >= 0 && coord.gamma >= 0) {
+          Color c;
+          c.R = coord.alpha * clrs[0].R + coord.beta * clrs[1].R + coord.gamma * clrs[2].R;
+          c.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
+          c.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
+          QPen oldpen = painter.pen();
+          painter.setPen(QPen(QColor(c.R, c.G, c.B), 1));
+          painter.drawPoint(x, y);
+          painter.setPen(oldpen);
+        }
+      }
+    }
+  }
+
+  void drawSkeleton(QPainter& painter) {
     int n = indices.rows();
     for (int i = 0; i < n; ++i) {
       Index3 idx = indices.row(i);
@@ -149,6 +196,14 @@ class GLMesh : public GLObject {
       painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
     }
   }
+
+  // TODO add Z-Buffer
+  void draw(QPainter& painter) {
+    rasterize(painter);
+    drawSkeleton(painter);
+  }
 };
+
+const Color GLMesh::defaultColor = {255, 255, 255};
 
 }  // namespace qtgl
