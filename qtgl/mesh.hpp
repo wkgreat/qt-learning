@@ -32,8 +32,10 @@ class GLObject {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
   virtual void draw(QPainter& painter) = 0;
+  virtual void rasterize(Fragments& fragments) = 0;
 };
 
+// TODO 使用midpoint算法进行光栅化
 class GLLine : public GLObject {
  public:
   GLLine() = default;
@@ -54,6 +56,9 @@ class GLLine : public GLObject {
     Vertice p1 = vertices.row(n - 1);
     Vertice p2 = vertices.row(0);
     painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
+  }
+  void rasterize(Fragments& fragments) {
+    // TODO
   }
 };
 
@@ -142,38 +147,43 @@ class GLMesh : public GLObject {
     return meshes;
   }
 
-  void rasterize(QPainter& painter) {
+  void rasterize(Fragments& fragments) {
     int n = indices.rows();
     for (int i = 0; i < n; ++i) {
       Index3 idx = indices.row(i);
       Vertice p0 = vertices.row(idx[0]);
       Vertice p1 = vertices.row(idx[1]);
       Vertice p2 = vertices.row(idx[2]);
-      Triangle t(p0[0], p0[1], p1[0], p1[1], p2[0], p2[1]);
+      Triangle t(p0, p1, p2);
       std::vector<Color> clrs = colors[i];
-      rasterizeTriangle(t, clrs, painter);
+      rasterizeTriangle(t, clrs, fragments);
     }
   }
 
-  void rasterizeTriangle(Triangle& t, std::vector<Color>& clrs, QPainter& painter) {
+  void rasterizeTriangle(Triangle& t, std::vector<Color>& clrs, Fragments& fragments) {
     // mbr
-    int xmin = static_cast<int>(std::min(std::min(t.x0, t.x1), t.x2));
-    int xmax = static_cast<int>(std::max(std::max(t.x0, t.x1), t.x2));
-    int ymin = static_cast<int>(std::min(std::min(t.y0, t.y1), t.y2));
-    int ymax = static_cast<int>(std::max(std::max(t.y0, t.y1), t.y2));
+    int xmin = static_cast<int>(std::min(std::min(t.x0(), t.x1()), t.x2()));
+    int xmax = static_cast<int>(std::max(std::max(t.x0(), t.x1()), t.x2()));
+    int ymin = static_cast<int>(std::min(std::min(t.y0(), t.y1()), t.y2()));
+    int ymax = static_cast<int>(std::max(std::max(t.y0(), t.y1()), t.y2()));
 
     for (int x = xmin; x <= xmax; ++x) {
+      if (x < 0 || x >= fragments[0].size()) continue;
       for (int y = ymin; y <= ymax; ++y) {
+        if (y < 0 || y >= fragments.size()) continue;
         Triangle::BarycentricCoordnates coord = t.resovleBarycentricCoordnates(x, y);
         if (coord.alpha >= 0 && coord.beta >= 0 && coord.gamma >= 0) {
           Color c;
           c.R = coord.alpha * clrs[0].R + coord.beta * clrs[1].R + coord.gamma * clrs[2].R;
           c.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
           c.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
-          QPen oldpen = painter.pen();
-          painter.setPen(QPen(QColor(c.R, c.G, c.B), 1));
-          painter.drawPoint(x, y);
-          painter.setPen(oldpen);
+          float depth = coord.alpha * t.z0() + coord.beta * t.z1() + coord.gamma * t.z2();
+          if (depth < fragments[y][x].depth) {
+            fragments[y][x].color.R = c.R;
+            fragments[y][x].color.G = c.G;
+            fragments[y][x].color.B = c.B;
+            fragments[y][x].depth = depth;
+          }
         }
       }
     }
@@ -197,10 +207,9 @@ class GLMesh : public GLObject {
     }
   }
 
-  // TODO add Z-Buffer
   void draw(QPainter& painter) {
-    rasterize(painter);
-    drawSkeleton(painter);
+    // rasterize(painter);
+    // drawSkeleton(painter);
   }
 };
 

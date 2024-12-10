@@ -14,6 +14,7 @@ class GLScene {
   std::vector<GLObject*> objs;
   bool showAxis;
   std::vector<GLObject*> axis;
+  std::vector<std::vector<float>> zbuffer;
 
  public:
   GLScene(float viewHeight = 768.0, float viewWidth = 1024.0)
@@ -89,7 +90,14 @@ class GLScene {
     viewObj->vertices = viewObj->vertices * viewportMatrix();
     return viewObj;
   }
+
+  Fragments initFragmentsBuffer() {
+    Fragments fs(this->viewHeight, std::vector<Fragment>(this->viewWidth, Fragment::init()));
+    return fs;
+  }
+
   void draw(QPainter& painter) {
+    Fragments fragments = initFragmentsBuffer();
     if (this->showAxis) {
       QPen oldpen = painter.pen();
       GLObject* viewObj;
@@ -116,8 +124,19 @@ class GLScene {
     }
     for (GLObject* obj : objs) {
       GLObject* viewObj = meshToView(obj);
-      viewObj->draw(painter);
+      viewObj->rasterize(fragments);
       delete viewObj;
+    }
+    for (int h = 0; h < this->viewHeight; ++h) {
+      for (int w = 0; w < this->viewWidth; ++w) {
+        Fragment fragment = fragments[h][w];
+        if (fragment.depth <= 1) {
+          QPen oldpen = painter.pen();
+          painter.setPen(QPen(QColor(fragment.color.R, fragment.color.G, fragment.color.B), 1));
+          painter.drawPoint(w, h);
+          painter.setPen(oldpen);
+        }
+      }
     }
   }
 };
