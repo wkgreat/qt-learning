@@ -46,22 +46,23 @@ GLMesh* GLMesh::readFromObjFile(std::string fpath) {
 
       QString qline = QString::fromStdString(line);
       QStringList strlst = qline.split(QRegExp("\\s+"));
-      //   std::cout << strlst[1].toFloat() << "," << strlst[2].toFloat() << "," <<
-      //   strlst[3].toFloat()
-      //             << std::endl;
-      mesh->pushVertice(strlst[1].toFloat(), strlst[2].toFloat(), strlst[3].toFloat());
+      mesh->pushVertice(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
 
     } else if (line[0] == 'f' && line[1] == ' ') {  // face
 
       QString qline = QString::fromStdString(line);
       QStringList strlst = qline.split(QRegExp("\\s+"));
-      std::vector<int> v;
+      std::vector<int> vi;
+      std::vector<int> ni;
       for (int i = 1; i < strlst.length(); ++i) {
-        v.push_back(strlst[i].split("/")[0].toInt() - 1);
+        vi.push_back(strlst[i].split("/")[0].toInt() - 1);
+        ni.push_back(strlst[i].split("/")[2].toInt() - 1);
       }
-      Index3 idx{v[0], v[1], v[2]};
-      //   std::cout << v[0] << "," << v[1] << "," << v[2] << std::endl;
+      Index3 idx{vi[0], vi[1], vi[2]};
       mesh->addIndex3(group, idx, Color::random(), Color::random(), Color::random());
+
+      NormIndex normidx{ni[0], ni[1], ni[2]};
+      mesh->addNormIndex(group, idx);
 
     } else if (line[0] == 'g') {  // group
 
@@ -76,7 +77,9 @@ GLMesh* GLMesh::readFromObjFile(std::string fpath) {
       std::cout << group << std::endl;
 
     } else if (line[0] == 'v' && line[1] == 'n') {  // normal
-      // TODO
+      QString qline = QString::fromStdString(line);
+      QStringList strlst = qline.split(QRegExp("\\s+"));
+      mesh->pushNormal(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
     } else if (line[0] == 'v' && line[1] == 't') {  // texture
       // TODO
     } else if (line[0] == '#') {

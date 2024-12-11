@@ -6,19 +6,19 @@
 
 namespace qtgl {
 
-using Vertice = Eigen::Vector4f;
-using Vertices = Eigen::Matrix<float, Eigen::Dynamic, 4>;
+using Vertice = Eigen::Vector4d;
+using Vertices = Eigen::Matrix<double, Eigen::Dynamic, 4>;
 using Index3 = Eigen::Vector3i;
 using Indices3 = Eigen::Matrix<int, Eigen::Dynamic, 3>;
-using Normal = Eigen::Vector3f;
-using Normals = Eigen::Matrix<float, Eigen::Dynamic, 3>;
+using Normal = Eigen::Vector3d;
+using Normals = Eigen::Matrix<double, Eigen::Dynamic, 3>;
 using NormIndex = Eigen::Vector3i;
 using NormIndices = Eigen::Matrix<int, Eigen::Dynamic, 3>;
 
 struct Position3 {
-  float x;
-  float y;
-  float z;
+  double x;
+  double y;
+  double z;
 };
 
 struct Color {
@@ -35,14 +35,14 @@ struct Color {
 };
 
 struct Color01 {
-  float R;
-  float G;
-  float B;
-  float A;
+  double R;
+  double G;
+  double B;
+  double A;
   static Color01 random() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distr(0, 1);
+    std::uniform_real_distribution<double> distr(0, 1);
     return {distr(gen), distr(gen), distr(gen), distr(gen)};
   }
   void clamp() {
@@ -67,14 +67,14 @@ struct Color01 {
 
 class Triangle {
  private:
-  float f_alpha, f_beta, f_gamma;
-  float _x0, _y0, _z0, _x1, _y1, _z1, _x2, _y2, _z2;
-  float f01(float x, float y) { return (_y0 - _y1) * x + (_x1 - _x0) * y + _x0 * _y1 - _x1 * _y0; }
-  float f12(float x, float y) { return (_y1 - _y2) * x + (_x2 - _x1) * y + _x1 * _y2 - _x2 * _y1; }
-  float f20(float x, float y) { return (_y2 - _y0) * x + (_x0 - _x2) * y + _x2 * _y0 - _x0 * _y2; }
+  double f_alpha, f_beta, f_gamma;
+  double _x0, _y0, _z0, _x1, _y1, _z1, _x2, _y2, _z2;
+  double f01(double x, double y) { return (_y0 - _y1) * x + (_x1 - _x0) * y + _x0 * _y1 - _x1 * _y0; }
+  double f12(double x, double y) { return (_y1 - _y2) * x + (_x2 - _x1) * y + _x1 * _y2 - _x2 * _y1; }
+  double f20(double x, double y) { return (_y2 - _y0) * x + (_x0 - _x2) * y + _x2 * _y0 - _x0 * _y2; }
 
  public:
-  Triangle(float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2)
+  Triangle(double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2)
       : _x0(x0), _y0(y0), _z0(z0), _x1(x1), _y1(y1), _z1(z1), _x2(x2), _y2(y2), _z2(z2) {
     f_alpha = f12(x0, y0);
     f_beta = f20(x1, y1);
@@ -95,25 +95,25 @@ class Triangle {
     f_gamma = f01(_x2, _y2);
   }
 
-  float x0() const { return _x0; }
-  float y0() const { return _y0; }
-  float z0() const { return _z0; }
-  float x1() const { return _x1; }
-  float y1() const { return _y1; }
-  float z1() const { return _z1; }
-  float x2() const { return _x2; }
-  float y2() const { return _y2; }
-  float z2() const { return _z2; }
+  double x0() const { return _x0; }
+  double y0() const { return _y0; }
+  double z0() const { return _z0; }
+  double x1() const { return _x1; }
+  double y1() const { return _y1; }
+  double z1() const { return _z1; }
+  double x2() const { return _x2; }
+  double y2() const { return _y2; }
+  double z2() const { return _z2; }
 
   // 重心坐标
   struct BarycentricCoordnates {
-    float alpha;
-    float beta;
-    float gamma;
+    double alpha;
+    double beta;
+    double gamma;
   };
 
   // 求解重心坐标
-  BarycentricCoordnates resovleBarycentricCoordnates(float x, float y) {
+  BarycentricCoordnates resovleBarycentricCoordnates(double x, double y) {
     BarycentricCoordnates coord;
     coord.alpha = f12(x, y) / f_alpha;
     coord.beta = f20(x, y) / f_beta;
@@ -124,8 +124,8 @@ class Triangle {
 
 struct Fragment {
   Color color;
-  float depth;  // z-buffer
-  constexpr static float DEPTH_INF = std::numeric_limits<float>::max() / 2;
+  double depth;  // z-buffer
+  constexpr static double DEPTH_INF = std::numeric_limits<double>::max() / 2;
   static Fragment init() { return {{255, 255, 255, 255}, DEPTH_INF}; }
 };
 

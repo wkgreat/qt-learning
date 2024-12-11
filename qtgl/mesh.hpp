@@ -18,18 +18,18 @@ class GLObject {
   GLObject(const GLObject& obj) { vertices = obj.vertices; }
   virtual GLObject* clone() = 0;
 
-  void pushVertice(float x, float y, float z) {
+  void pushVertice(double x, double y, double z) {
     Vertice v(x, y, z, 1);
     vertices.conservativeResize(vertices.rows() + 1, vertices.cols());
     vertices.row(vertices.rows() - 1) = v;
   }
-  void rotate_x(float a) { this->vertices = AffineUtils::rotate_x(this->vertices, a); }
-  void rotate_y(float a) { this->vertices = AffineUtils::rotate_y(this->vertices, a); }
-  void rotate_z(float a) { this->vertices = AffineUtils::rotate_z(this->vertices, a); }
-  void translate(float x, float y, float z) {
+  void rotate_x(double a) { this->vertices = AffineUtils::rotate_x(this->vertices, a); }
+  void rotate_y(double a) { this->vertices = AffineUtils::rotate_y(this->vertices, a); }
+  void rotate_z(double a) { this->vertices = AffineUtils::rotate_z(this->vertices, a); }
+  void translate(double x, double y, double z) {
     this->vertices = AffineUtils::translate(this->vertices, x, y, z);
   }
-  void scale(float x, float y, float z) {
+  void scale(double x, double y, double z) {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
   virtual void draw(QPainter& painter) = 0;
@@ -87,6 +87,11 @@ class GLMeshGroup : public GLObject {
     colors.push_back(std::move(tricolor));
   }
 
+  void addNormIndex(NormIndex idx) {
+    normIndices.conservativeResize(normIndices.rows() + 1, normIndices.cols());
+    normIndices.row(normIndices.rows() - 1) = idx;
+  }
+
   GLObject* clone() {
     GLMeshGroup* g = new GLMeshGroup(this->parent, this->name);
     g->indices = indices;
@@ -113,12 +118,12 @@ class GLMeshGroup : public GLObject {
         if (y < 0 || y >= fragments.size()) continue;
         Triangle::BarycentricCoordnates coord = t.resovleBarycentricCoordnates(x, y);
         if (coord.alpha >= 0 && coord.beta >= 0 && coord.gamma >= 0) {
-          Color c;
-          c.R = coord.alpha * clrs[0].R + coord.beta * clrs[1].R + coord.gamma * clrs[2].R;
-          c.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
-          c.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
-          float depth = coord.alpha * t.z0() + coord.beta * t.z1() + coord.gamma * t.z2();
-          if (depth < fragments[y][x].depth - 1E-6) {
+          double depth = coord.alpha * t.z0() + coord.beta * t.z1() + coord.gamma * t.z2();
+          if (depth < fragments[y][x].depth) {
+            Color c;
+            c.R = coord.alpha * clrs[0].R + coord.beta * clrs[1].R + coord.gamma * clrs[2].R;
+            c.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
+            c.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
             fragments[y][x].color.R = c.R;
             fragments[y][x].color.G = c.G;
             fragments[y][x].color.B = c.B;
@@ -152,6 +157,7 @@ class GLMesh : public GLObject {
  public:
   const static Color defaultColor;
   const static std::string defaultGroup;
+  Normals normals;
   std::map<std::string, GLMeshGroup*> groups;
 
   GLMesh() = default;
@@ -196,6 +202,17 @@ class GLMesh : public GLObject {
     group->indices.row(group->indices.rows() - 1) = idx;
     std::vector<Color> tricolor{clr0, clr1, clr2};
     group->colors.push_back(std::move(tricolor));
+  }
+
+  void pushNormal(double a, double b, double c) {
+    Normal n(a, b, c);
+    normals.conservativeResize(normals.rows() + 1, normals.cols());
+    normals.row(normals.rows() - 1) = n;
+  }
+
+  void addNormIndex(std::string& groupName, NormIndex idx) {
+    GLMeshGroup* group = getGroup(groupName);
+    group->addNormIndex(idx);
   }
 
   static GLMesh* readFromObjFile(std::string fpath);

@@ -5,11 +5,11 @@ int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
   QWidget* window = new QWidget;
   window->setWindowTitle("QTGL");
-  window->setGeometry(0, 0, 600, 600);
+  window->setGeometry(0, 0, 1000, 1000);
   QGridLayout* layout = new QGridLayout;
 
   qtgl::GLRenderWidget widget;
-  widget.setFixedSize(600, 600);
+  widget.setFixedSize(1000, 1000);
 
   std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\minicooper.obj";
   // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\teapot.obj";

@@ -8,8 +8,8 @@
 namespace qtgl {
 class GLScene {
  private:
-  float viewHeight;
-  float viewWidth;
+  double viewHeight;
+  double viewWidth;
   GLCamera camera;
   GLProjection projection;
   std::vector<GLObject*> objs;
@@ -18,7 +18,7 @@ class GLScene {
   std::vector<GLLight*> lights;
 
  public:
-  GLScene(float viewHeight = 768.0, float viewWidth = 1024.0)
+  GLScene(double viewHeight = 768.0, double viewWidth = 1024.0)
       : viewHeight(viewHeight), viewWidth(viewWidth) {
     this->projection.height = viewHeight;
     this->projection.width = viewWidth;
@@ -37,15 +37,15 @@ class GLScene {
   }
   GLCamera& getCamera() { return this->camera; }
   GLProjection& getProjection() { return this->projection; }
-  void setViewHeight(float h) {
+  void setViewHeight(double h) {
     this->viewHeight = h;
     this->projection.height = h;
   }
-  void setViewWidth(float w) {
+  void setViewWidth(double w) {
     this->viewWidth = w;
     this->projection.width = w;
   }
-  void setViewSize(float w, float h) {
+  void setViewSize(double w, double h) {
     this->setViewWidth(w);
     this->setViewHeight(h);
   }
@@ -71,10 +71,10 @@ class GLScene {
   void addObj(GLObject* obj) { objs.push_back(obj); }
   void addLight(GLLight* lgt) { lights.push_back(lgt); }
   std::vector<GLObject*>& getObjs() { return this->objs; }
-  Eigen::Matrix4f viewportMatrix() {
-    float hw = this->viewWidth / 2;
-    float hh = this->viewHeight / 2;
-    Eigen::Matrix4f viewMtx;
+  Eigen::Matrix4d viewportMatrix() {
+    double hw = this->viewWidth / 2;
+    double hh = this->viewHeight / 2;
+    Eigen::Matrix4d viewMtx;
     viewMtx << hw, 0, 0, 0,  //
         0, -hh, 0, 0,        //
         0, 0, 1, 0,          //
