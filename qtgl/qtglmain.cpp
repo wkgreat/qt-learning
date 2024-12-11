@@ -11,18 +11,13 @@ int main(int argc, char* argv[]) {
   qtgl::GLRenderWidget widget;
   widget.setFixedSize(600, 600);
 
-  // QTGL::Mesh mesh = QTGL::Mesh::makeCube(50);
-  // widget.getScene().addObj(mesh);
+  std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\minicooper.obj";
+  // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\teapot.obj";
 
-  std::vector<qtgl::GLMesh> objs =
-      qtgl::GLMesh::readFromObjFile("E:\\codes\\practice\\qt-learning\\data\\teapot.obj");
-  for (qtgl::GLMesh& mesh : objs) {
-    qtgl::GLObject* obj = mesh.clone();
-    widget.getScene().addObj(obj);
-  }
+  qtgl::GLMesh* mesh = qtgl::GLMesh::readFromObjFile(fpath);
+  widget.getScene().addObj(mesh);
 
-  widget.getScene().getCamera().lookAt(50, 50, 50, 0, 0, 0);
-  // widget.getScene().setShowAxis(true);
+  widget.getScene().getCamera().lookAt(1000, 1000, 1000, 0, 0, 0);
   widget.getScene().getProjection().mode = qtgl::GLProjectionMode::PRESPECTIVE;
   layout->addWidget(&widget, 0, 0);
 

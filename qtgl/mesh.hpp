@@ -5,6 +5,7 @@
 #include <QStringList>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include "affineutils.hpp"
 
 namespace qtgl {
@@ -62,25 +63,22 @@ class GLLine : public GLObject {
   }
 };
 
-class GLMesh : public GLObject {
+class GLMesh;
+
+class GLMeshGroup : public GLObject {
  public:
-  const static Color defaultColor;
+  GLMesh* parent;
+  std::string name;
   Indices3 indices;
+  NormIndices normIndices;
   std::vector<std::vector<Color>> colors;
-  GLMesh() = default;
-  ~GLMesh() = default;
-  GLMesh(const GLMesh& mesh) : GLObject(mesh) {
-    indices = mesh.indices;
-    colors = mesh.colors;
+
+  GLMeshGroup(GLMesh* parent, std::string& name) {
+    this->parent = parent;
+    this->name = name;
   }
-  GLObject* clone() {
-    GLMesh* p = new GLMesh;
-    p->indices = this->indices;
-    p->vertices = this->vertices;
-    p->colors = this->colors;
-    return p;
-  }
-  void addIndex3(Index3 idx) { addIndex3(idx, defaultColor, defaultColor, defaultColor); }
+
+  void addIndex3(Index3 idx);
 
   void addIndex3(Index3 idx, Color clr0, Color clr1, Color clr2) {
     indices.conservativeResize(indices.rows() + 1, indices.cols());
@@ -89,76 +87,18 @@ class GLMesh : public GLObject {
     colors.push_back(std::move(tricolor));
   }
 
-  static std::vector<GLMesh> readFromObjFile(std::string fpath) {
-    std::vector<GLMesh> meshes;
-    std::ifstream ifs;
-    ifs.open(fpath, std::ios::in);
-
-    if (!ifs.is_open()) {
-      return {};
-    }
-
-    char buf[1024] = {0};
-    bool newMesh = true;
-    GLMesh* mesh = nullptr;
-
-    int i = 0;
-
-    while (ifs.getline(buf, sizeof(buf))) {
-      if (i % 1000 == 0) {
-        std::cout << i << std::endl;
-      }
-      i++;
-      if (buf[0] == 'v' && buf[1] == ' ') {
-        if (newMesh) {
-          if (mesh) {
-            meshes.push_back(*mesh);
-            delete mesh;
-            mesh = nullptr;
-          }
-          mesh = new GLMesh;
-        }
-        QString line(buf);
-        QStringList strlst = line.split(" ");
-
-        mesh->pushVertice(strlst[1].toFloat(), strlst[2].toFloat(), strlst[3].toFloat());
-        newMesh = false;
-      } else {
-        if (buf[0] == 'f' && buf[1] == ' ') {
-          QString line(buf);
-          QStringList strlst = line.split(" ");
-          std::vector<int> v;
-          for (int i = 1; i < strlst.length(); ++i) {
-            v.push_back(strlst[i].split("/")[0].toInt() - 1);
-          }
-          Index3 idx{v[0], v[1], v[2]};
-          mesh->addIndex3(idx, Color::random(), Color::random(), Color::random());
-        }
-        newMesh = true;
-      }
-    }
-
-    if (mesh) {
-      meshes.push_back(*mesh);
-      delete mesh;
-      mesh = nullptr;
-    }
-
-    return meshes;
+  GLObject* clone() {
+    GLMeshGroup* g = new GLMeshGroup(this->parent, this->name);
+    g->indices = indices;
+    g->normIndices = normIndices;
+    g->colors = colors;
+    return g;
+  }
+  void draw(QPainter& painter) {
+    // TODO
   }
 
-  void rasterize(Fragments& fragments) {
-    int n = indices.rows();
-    for (int i = 0; i < n; ++i) {
-      Index3 idx = indices.row(i);
-      Vertice p0 = vertices.row(idx[0]);
-      Vertice p1 = vertices.row(idx[1]);
-      Vertice p2 = vertices.row(idx[2]);
-      Triangle t(p0, p1, p2);
-      std::vector<Color> clrs = colors[i];
-      rasterizeTriangle(t, clrs, fragments);
-    }
-  }
+  void rasterize(Fragments& fragments);
 
   void rasterizeTriangle(Triangle& t, std::vector<Color>& clrs, Fragments& fragments) {
     // mbr
@@ -178,7 +118,7 @@ class GLMesh : public GLObject {
           c.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
           c.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
           float depth = coord.alpha * t.z0() + coord.beta * t.z1() + coord.gamma * t.z2();
-          if (depth < fragments[y][x].depth) {
+          if (depth < fragments[y][x].depth - 1E-6) {
             fragments[y][x].color.R = c.R;
             fragments[y][x].color.G = c.G;
             fragments[y][x].color.B = c.B;
@@ -206,13 +146,66 @@ class GLMesh : public GLObject {
       painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
     }
   }
+};
+
+class GLMesh : public GLObject {
+ public:
+  const static Color defaultColor;
+  const static std::string defaultGroup;
+  std::map<std::string, GLMeshGroup*> groups;
+
+  GLMesh() = default;
+  ~GLMesh() {
+    for (auto g : groups) {
+      delete g.second;
+    }
+  };
+  GLMesh(const GLMesh& mesh) : GLObject(mesh) { groups = mesh.groups; }
+  GLObject* clone() {
+    GLMesh* p = new GLMesh;
+    p->groups = this->groups;
+    p->vertices = this->vertices;
+    for (auto g : groups) {
+      p->groups[g.first] = reinterpret_cast<GLMeshGroup*>((g.second)->clone());
+      p->groups[g.first]->parent = p;
+    }
+    return p;
+  }
+
+  GLMeshGroup* getGroup(std::string& name) {
+    if (groups.count(name)) {
+      return groups[name];
+    } else {
+      groups[name] = new GLMeshGroup(this, name);
+      return groups[name];
+    }
+  }
+
+  void addIndex3(Index3 idx) { addIndex3(const_cast<std::string&>(defaultGroup), idx); }
+  void addIndex3(Index3 idx, Color clr0, Color clr1, Color clr2) {
+    addIndex3(const_cast<std::string&>(defaultGroup), idx, clr0, clr1, clr2);
+  }
+  void addIndex3(std::string& groupName, Index3 idx) {
+    getGroup(groupName)->addIndex3(idx, GLMesh::defaultColor, GLMesh::defaultColor,
+                                   GLMesh::defaultColor);
+  }
+
+  void addIndex3(std::string& groupName, Index3 idx, Color clr0, Color clr1, Color clr2) {
+    GLMeshGroup* group = getGroup(groupName);
+    group->indices.conservativeResize(group->indices.rows() + 1, group->indices.cols());
+    group->indices.row(group->indices.rows() - 1) = idx;
+    std::vector<Color> tricolor{clr0, clr1, clr2};
+    group->colors.push_back(std::move(tricolor));
+  }
+
+  static GLMesh* readFromObjFile(std::string fpath);
+
+  void rasterize(Fragments& fragments);
 
   void draw(QPainter& painter) {
     // rasterize(painter);
     // drawSkeleton(painter);
   }
 };
-
-const Color GLMesh::defaultColor = {255, 255, 255};
 
 }  // namespace qtgl

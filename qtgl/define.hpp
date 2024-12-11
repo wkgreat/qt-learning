@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <limits>
 #include <random>
 
 namespace qtgl {
@@ -9,6 +10,16 @@ using Vertice = Eigen::Vector4f;
 using Vertices = Eigen::Matrix<float, Eigen::Dynamic, 4>;
 using Index3 = Eigen::Vector3i;
 using Indices3 = Eigen::Matrix<int, Eigen::Dynamic, 3>;
+using Normal = Eigen::Vector3f;
+using Normals = Eigen::Matrix<float, Eigen::Dynamic, 3>;
+using NormIndex = Eigen::Vector3i;
+using NormIndices = Eigen::Matrix<int, Eigen::Dynamic, 3>;
+
+struct Position3 {
+  float x;
+  float y;
+  float z;
+};
 
 struct Color {
   short R;
@@ -18,12 +29,38 @@ struct Color {
   static Color random() {
     std::random_device rd;
     std::mt19937 gen(rd());
+    std::uniform_int_distribution<short> distr(0, 255);
+    return {distr(gen), distr(gen), distr(gen), distr(gen)};
+  }
+};
+
+struct Color01 {
+  float R;
+  float G;
+  float B;
+  float A;
+  static Color01 random() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distr(0, 1);
+    return {distr(gen), distr(gen), distr(gen), distr(gen)};
+  }
+  void clamp() {
+    R = R < 0 ? 0 : R;
+    G = G < 0 ? 0 : G;
+    B = B < 0 ? 0 : B;
+    A = A < 0 ? 0 : A;
+    R = R > 1 ? 1 : R;
+    G = G > 1 ? 1 : G;
+    B = B > 1 ? 1 : B;
+    A = A > 1 ? 1 : A;
+  }
+  Color toColor() {
     Color c;
-    std::uniform_int_distribution<> distr(0, 255);
-    c.R = distr(gen);
-    c.G = distr(gen);
-    c.B = distr(gen);
-    c.A = distr(gen);
+    c.R = static_cast<short>(R * 255);
+    c.G = static_cast<short>(G * 255);
+    c.B = static_cast<short>(B * 255);
+    c.A = static_cast<short>(A * 255);
     return c;
   }
 };
@@ -88,7 +125,7 @@ class Triangle {
 struct Fragment {
   Color color;
   float depth;  // z-buffer
-  constexpr static float DEPTH_INF = 10;
+  constexpr static float DEPTH_INF = std::numeric_limits<float>::max() / 2;
   static Fragment init() { return {{255, 255, 255, 255}, DEPTH_INF}; }
 };
 

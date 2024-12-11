@@ -3,6 +3,7 @@
 #include "camera.hpp"
 #include "mesh.hpp"
 #include "projection.hpp"
+#include "shader.hpp"
 
 namespace qtgl {
 class GLScene {
@@ -14,7 +15,7 @@ class GLScene {
   std::vector<GLObject*> objs;
   bool showAxis;
   std::vector<GLObject*> axis;
-  std::vector<std::vector<float>> zbuffer;
+  std::vector<GLLight*> lights;
 
  public:
   GLScene(float viewHeight = 768.0, float viewWidth = 1024.0)
@@ -29,6 +30,9 @@ class GLScene {
     }
     for (GLObject* obj : axis) {
       delete obj;
+    }
+    for (GLLight* lgt : lights) {
+      delete lgt;
     }
   }
   GLCamera& getCamera() { return this->camera; }
@@ -65,6 +69,7 @@ class GLScene {
     this->axis.push_back(zAxis);
   }
   void addObj(GLObject* obj) { objs.push_back(obj); }
+  void addLight(GLLight* lgt) { lights.push_back(lgt); }
   std::vector<GLObject*>& getObjs() { return this->objs; }
   Eigen::Matrix4f viewportMatrix() {
     float hw = this->viewWidth / 2;
@@ -99,28 +104,22 @@ class GLScene {
   void draw(QPainter& painter) {
     Fragments fragments = initFragmentsBuffer();
     if (this->showAxis) {
-      QPen oldpen = painter.pen();
       GLObject* viewObj;
       // x
-      painter.setPen(QPen(QColor(255, 0, 0), 2));
       viewObj = meshToView(axis[0]);
-      viewObj->draw(painter);
+      viewObj->rasterize(fragments);
       delete viewObj;
       viewObj = nullptr;
       // y
-      painter.setPen(QPen(QColor(0, 255, 0), 2));
       viewObj = meshToView(axis[1]);
-      viewObj->draw(painter);
+      viewObj->rasterize(fragments);
       delete viewObj;
       viewObj = nullptr;
       // z
-      painter.setPen(QPen(QColor(0, 0, 255), 2));
       viewObj = meshToView(axis[2]);
-      viewObj->draw(painter);
+      viewObj->rasterize(fragments);
       delete viewObj;
       viewObj = nullptr;
-      // reset pen
-      painter.setPen(oldpen);
     }
     for (GLObject* obj : objs) {
       GLObject* viewObj = meshToView(obj);
@@ -130,7 +129,7 @@ class GLScene {
     for (int h = 0; h < this->viewHeight; ++h) {
       for (int w = 0; w < this->viewWidth; ++w) {
         Fragment fragment = fragments[h][w];
-        if (fragment.depth <= 1) {
+        if (fragment.depth < Fragment::DEPTH_INF) {  // clip
           QPen oldpen = painter.pen();
           painter.setPen(QPen(QColor(fragment.color.R, fragment.color.G, fragment.color.B), 1));
           painter.drawPoint(w, h);
