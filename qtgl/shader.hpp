@@ -6,23 +6,23 @@ namespace qtgl {
 
 struct GLLight {
   Color01 intensity;
-  virtual Eigen::Vector3d uvLight(Position3& pos) = 0;  // l unit vector
+  virtual Eigen::Vector3d uvLight(Vertice& pos) = 0;  // l unit vector
 };
 
 struct DirectionalGLLight : public GLLight {
   Eigen::Vector3d d;  // direction
-  Eigen::Vector3d uvLight(Position3& pos) { return (d * -1).normalized(); }
+  Eigen::Vector3d uvLight(Vertice& pos) { return (d * -1).normalized(); }
 };
 
 struct PointGLLight : public GLLight {
-  Position3 position;
-  Eigen::Vector3d uvLight(Position3& pos) {
-    Eigen::Vector3d v{position.x - pos.x, position.y - pos.y, position.z - pos.z};
-    return v.normalized();
-  }
+  Vertice position;
+  Eigen::Vector3d uvLight(Vertice& pos) { return (position - pos).head(3).normalized(); }
 };
 
-struct GLShader {};
+struct GLShader {
+  virtual Color01 shade(GLLight* lighter, Eigen::Vector3d& uvNormal, Vertice& pos,
+                        Eigen::Vector3d& uvEye, Color01& diffuse, Color01& ambient) = 0;
+};
 struct LambertianPhongGLShader : public GLShader {
  private:
   double phongExp = 1;  // Phong Exponent
@@ -30,7 +30,7 @@ struct LambertianPhongGLShader : public GLShader {
  public:
   void setPhoneExp(double p) { this->phongExp = p; }
   double getPhoneExp() const { return this->phongExp; }
-  Color01 shade(GLLight* lighter, Eigen::Vector3d& uvNormal, Position3& pos, Eigen::Vector3d& uvEye,
+  Color01 shade(GLLight* lighter, Eigen::Vector3d& uvNormal, Vertice& pos, Eigen::Vector3d& uvEye,
                 Color01& diffuse, Color01& ambient) {
     Eigen::Vector3d uvLight = lighter->uvLight(pos);
     Eigen::Vector3d uvHalf = (uvEye + uvLight).normalized();  // unit halfway vector
@@ -51,4 +51,5 @@ struct LambertianPhongGLShader : public GLShader {
     return cr * (ca + cl * std::max(0.0, n.dot(l))) + cl * cp * std::pow(h.dot(n), p);
   };
 };
+
 }  // namespace qtgl

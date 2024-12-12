@@ -15,12 +15,6 @@ using Normals = Eigen::Matrix<double, Eigen::Dynamic, 3>;
 using NormIndex = Eigen::Vector3i;
 using NormIndices = Eigen::Matrix<int, Eigen::Dynamic, 3>;
 
-struct Position3 {
-  double x;
-  double y;
-  double z;
-};
-
 struct Color {
   short R;
   short G;
@@ -39,6 +33,14 @@ struct Color01 {
   double G;
   double B;
   double A;
+  Color01 operator+(Color01& c) {
+    Color01 r;
+    r.R = R + c.R;
+    r.G = G + c.G;
+    r.B = B + c.B;
+    r.A = A + c.A;
+    return r;
+  }
   static Color01 random() {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -69,12 +71,19 @@ class Triangle {
  private:
   double f_alpha, f_beta, f_gamma;
   double _x0, _y0, _z0, _x1, _y1, _z1, _x2, _y2, _z2;
-  double f01(double x, double y) { return (_y0 - _y1) * x + (_x1 - _x0) * y + _x0 * _y1 - _x1 * _y0; }
-  double f12(double x, double y) { return (_y1 - _y2) * x + (_x2 - _x1) * y + _x1 * _y2 - _x2 * _y1; }
-  double f20(double x, double y) { return (_y2 - _y0) * x + (_x0 - _x2) * y + _x2 * _y0 - _x0 * _y2; }
+  double f01(double x, double y) {
+    return (_y0 - _y1) * x + (_x1 - _x0) * y + _x0 * _y1 - _x1 * _y0;
+  }
+  double f12(double x, double y) {
+    return (_y1 - _y2) * x + (_x2 - _x1) * y + _x1 * _y2 - _x2 * _y1;
+  }
+  double f20(double x, double y) {
+    return (_y2 - _y0) * x + (_x0 - _x2) * y + _x2 * _y0 - _x0 * _y2;
+  }
 
  public:
-  Triangle(double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2)
+  Triangle(double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2,
+           double z2)
       : _x0(x0), _y0(y0), _z0(z0), _x1(x1), _y1(y1), _z1(z1), _x2(x2), _y2(y2), _z2(z2) {
     f_alpha = f12(x0, y0);
     f_beta = f20(x1, y1);
@@ -123,7 +132,7 @@ class Triangle {
 };
 
 struct Fragment {
-  Color color;
+  Color01 color;
   double depth;  // z-buffer
   constexpr static double DEPTH_INF = std::numeric_limits<double>::max() / 2;
   static Fragment init() { return {{255, 255, 255, 255}, DEPTH_INF}; }

@@ -15,13 +15,16 @@ class GLScene {
   std::vector<GLObject*> objs;
   bool showAxis;
   std::vector<GLObject*> axis;
+  GLShader* shader;
   std::vector<GLLight*> lights;
+  Fragments fragments;
 
  public:
   GLScene(double viewHeight = 768.0, double viewWidth = 1024.0)
       : viewHeight(viewHeight), viewWidth(viewWidth) {
     this->projection.height = viewHeight;
     this->projection.width = viewWidth;
+    shader = new LambertianPhongGLShader;
     addAxis();
   }
   ~GLScene() {
@@ -34,8 +37,10 @@ class GLScene {
     for (GLLight* lgt : lights) {
       delete lgt;
     }
+    delete shader;
   }
   GLCamera& getCamera() { return this->camera; }
+  Fragments& getFragments() { return this->fragments; }
   GLProjection& getProjection() { return this->projection; }
   void setViewHeight(double h) {
     this->viewHeight = h;
@@ -69,7 +74,15 @@ class GLScene {
     this->axis.push_back(zAxis);
   }
   void addObj(GLObject* obj) { objs.push_back(obj); }
+  void setShader(GLShader* shader) {
+    if (this->shader) {
+      delete this->shader;
+      this->shader = nullptr;
+    }
+    this->shader = shader;
+  }
   void addLight(GLLight* lgt) { lights.push_back(lgt); }
+  std::vector<GLLight*>& getLights() { return this->lights; }
   std::vector<GLObject*>& getObjs() { return this->objs; }
   Eigen::Matrix4d viewportMatrix() {
     double hw = this->viewWidth / 2;
@@ -84,6 +97,9 @@ class GLScene {
 
   GLObject* meshToView(GLObject* obj) {
     GLObject* viewObj = obj->clone();
+    // 渲染
+    Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
+    viewObj->shade(shader, lights, cameraPos);
     // View矩阵
     viewObj->vertices = viewObj->vertices * camera.viewMatrix();
     // 投影矩阵
@@ -102,7 +118,7 @@ class GLScene {
   }
 
   void draw(QPainter& painter) {
-    Fragments fragments = initFragmentsBuffer();
+    fragments = initFragmentsBuffer();  // TODO clear rather than init new
     if (this->showAxis) {
       GLObject* viewObj;
       // x
@@ -131,7 +147,8 @@ class GLScene {
         Fragment fragment = fragments[h][w];
         if (fragment.depth < Fragment::DEPTH_INF) {  // clip
           QPen oldpen = painter.pen();
-          painter.setPen(QPen(QColor(fragment.color.R, fragment.color.G, fragment.color.B), 1));
+          painter.setPen(QPen(
+              QColor(fragment.color.R * 255, fragment.color.G * 255, fragment.color.B * 255), 1));
           painter.drawPoint(w, h);
           painter.setPen(oldpen);
         }

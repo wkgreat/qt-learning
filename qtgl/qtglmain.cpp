@@ -19,11 +19,21 @@ int main(int argc, char* argv[]) {
 
   widget.getScene().getCamera().lookAt(1000, 1000, 1000, 0, 0, 0);
   widget.getScene().getProjection().mode = qtgl::GLProjectionMode::PRESPECTIVE;
+
+  qtgl::PointGLLight* lgt = new qtgl::PointGLLight;
+  lgt->intensity = {1, 1, 1, 1};
+  lgt->position = {1000, 0, 1000, 0};
+  widget.getScene().addLight(lgt);
+
   layout->addWidget(&widget, 0, 0);
 
   qtgl::SceneHelper helper;
   helper.setScene(&(widget.getScene()));
   layout->addWidget(&helper, 1, 0);
+
+  qtgl::GLPointLightHelper lgthelper;
+  lgthelper.setLight(lgt);
+  layout->addWidget(&lgthelper, 2, 0);
 
   window->setLayout(layout);
   window->show();

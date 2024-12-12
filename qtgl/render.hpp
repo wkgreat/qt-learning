@@ -39,6 +39,73 @@ class GLRenderWidget : public QWidget {
   }
 };
 
+class GLPointLightHelper : public QWidget {
+ public:
+  PointGLLight* lgt;
+  QLabel label1;
+  QLabel label2;
+  QLabel label3;
+
+  QSlider slider1;
+  QSlider slider2;
+  QSlider slider3;
+
+  QGridLayout layout;
+  GLPointLightHelper(QWidget* parent = nullptr) : QWidget(parent) {}
+  void setLight(PointGLLight* lgt) {
+    this->lgt = lgt;
+    label1.setText(QString("Light PosX: ") + QString::number(this->lgt->position[0]));
+    label2.setText(QString("Light PosY: ") + QString::number(this->lgt->position[1]));
+    label3.setText(QString("Light PosZ: ") + QString::number(this->lgt->position[2]));
+
+    slider1.setOrientation(Qt::Horizontal);
+    slider1.setMinimum(-600);
+    slider1.setMaximum(600);
+    slider1.setSingleStep(1);
+    slider1.setValue(this->lgt->position[0]);
+    slider1.setTracking(true);
+
+    connect(&slider1, &QSlider::valueChanged, [&](int value) {
+      this->lgt->position[0] = value;
+      label1.setText(QString("Light PosX: ") + QString::number(this->lgt->position[0]));
+    });
+
+    slider2.setOrientation(Qt::Horizontal);
+    slider2.setMinimum(-600);
+    slider2.setMaximum(600);
+    slider2.setSingleStep(1);
+    slider2.setValue(this->lgt->position[1]);
+    slider2.setTracking(true);
+
+    connect(&slider2, &QSlider::valueChanged, [&](int value) {
+      this->lgt->position[1] = value;
+      label2.setText(QString("Light PosY: ") + QString::number(this->lgt->position[1]));
+    });
+
+    slider3.setOrientation(Qt::Horizontal);
+    slider3.setMinimum(-600);
+    slider3.setMaximum(600);
+    slider3.setSingleStep(1);
+    slider3.setValue(this->lgt->position[2]);
+    slider3.setTracking(true);
+
+    connect(&slider3, &QSlider::valueChanged, [&](int value) {
+      this->lgt->position[2] = value;
+      label3.setText(QString("Light PosZ: ") + QString::number(this->lgt->position[2]));
+    });
+
+    layout.addWidget(&label1, 0, 0);
+    layout.addWidget(&slider1, 0, 1);
+    layout.addWidget(&label2, 1, 0);
+    layout.addWidget(&slider2, 1, 1);
+    layout.addWidget(&label3, 2, 0);
+    layout.addWidget(&slider3, 2, 1);
+
+    this->setLayout(&layout);
+  }
+  ~GLPointLightHelper() = default;
+};
+
 class SceneHelper : public QWidget {
  public:
   GLScene* scene;
