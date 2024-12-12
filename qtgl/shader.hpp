@@ -21,17 +21,26 @@ struct PointGLLight : public GLLight {
 
 struct GLShader {
   virtual Color01 shade(GLLight* lighter, Eigen::Vector3d& uvNormal, Vertice& pos,
-                        Eigen::Vector3d& uvEye, Color01& diffuse, Color01& ambient) = 0;
+                        Eigen::Vector3d& uvEye, Color01& diffuse) = 0;
 };
 struct LambertianPhongGLShader : public GLShader {
  private:
-  double phongExp = 1;  // Phong Exponent
+  double phongExp = 1;             // Phong Exponent
+  Color01 ambient = {0, 0, 0, 0};  // 环境光
 
  public:
+  LambertianPhongGLShader() {}
+  LambertianPhongGLShader(double phongExp) { this->phongExp = phongExp; }
+  LambertianPhongGLShader(double phongExp, Color01 ambient) {
+    this->phongExp = phongExp;
+    this->ambient = ambient;
+  }
   void setPhoneExp(double p) { this->phongExp = p; }
   double getPhoneExp() const { return this->phongExp; }
+  void setAmbient(Color01 c) { this->ambient = c; }
+  Color01 getAmbient() const { return this->ambient; }
   Color01 shade(GLLight* lighter, Eigen::Vector3d& uvNormal, Vertice& pos, Eigen::Vector3d& uvEye,
-                Color01& diffuse, Color01& ambient) {
+                Color01& diffuse) {
     Eigen::Vector3d uvLight = lighter->uvLight(pos);
     Eigen::Vector3d uvHalf = (uvEye + uvLight).normalized();  // unit halfway vector
     double cp = 1 - std::max(diffuse.R, std::max(diffuse.G, diffuse.B));

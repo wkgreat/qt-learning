@@ -34,7 +34,7 @@ class GLRenderWidget : public QWidget {
   void paintEvent(QPaintEvent* event) override {
     QPainter painter(this);
     painter.eraseRect(0, 0, this->width(), this->height());  // 清除画布
-    (scene.getObjs()[0])->rotate_y(MathUtils::toRadians(1));
+    (scene.getObjs()[0])->rotate_x(MathUtils::toRadians(1));
     scene.draw(painter);
   }
 };

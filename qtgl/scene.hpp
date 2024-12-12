@@ -81,6 +81,7 @@ class GLScene {
     }
     this->shader = shader;
   }
+  GLShader* getShader() { return this->shader; }
   void addLight(GLLight* lgt) { lights.push_back(lgt); }
   std::vector<GLLight*>& getLights() { return this->lights; }
   std::vector<GLObject*>& getObjs() { return this->objs; }

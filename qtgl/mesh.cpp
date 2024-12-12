@@ -7,7 +7,6 @@ void GLMeshGroup::addIndex3(Index3 idx) {
 }
 
 void GLMeshGroup::shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
-  Color01 ambient{0.1, 0.1, 0.1};  // TODO move to scene;
   int n = indices.rows();
   if (parent->normals.rows() == 0 || normIndices.rows() == 0) {  // 无法线信息
     return;
@@ -29,9 +28,9 @@ void GLMeshGroup::shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice
     Color01 d2 = colors[i][2];
     Color01 c0{0, 0, 0, 0}, c1{0, 0, 0, 0}, c2{0, 0, 0, 0};
     for (GLLight* lgt : lights) {
-      c0 = c0 + shader->shade(lgt, n0, p0, e0, d0, ambient);
-      c1 = c1 + shader->shade(lgt, n1, p1, e1, d1, ambient);
-      c2 = c2 + shader->shade(lgt, n2, p2, e2, d2, ambient);
+      c0 = c0 + shader->shade(lgt, n0, p0, e0, d0);
+      c1 = c1 + shader->shade(lgt, n1, p1, e1, d1);
+      c2 = c2 + shader->shade(lgt, n2, p2, e2, d2);
     }
     c0.clamp();
     c1.clamp();
