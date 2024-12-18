@@ -12,8 +12,9 @@ int main(int argc, char* argv[]) {
   widget.setFixedSize(1000, 1000);
 
   // mesh
-  std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\minicooper.obj";
+  std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\F16_Fighting_Falcon\\F16fin.obj";
   // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\teapot.obj";
+  // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\minicooper.obj";
   qtgl::GLMesh* mesh = qtgl::GLMesh::readFromObjFile(fpath);
   widget.getScene().addObj(mesh);
 
@@ -24,7 +25,7 @@ int main(int argc, char* argv[]) {
   // light
   qtgl::PointGLLight* lgt = new qtgl::PointGLLight;
   lgt->intensity = {1, 1, 1, 1};
-  lgt->position = {1000, 0, 1000, 0};
+  lgt->position = {500, 500, 500, 0};
   widget.getScene().addLight(lgt);
 
   // shader

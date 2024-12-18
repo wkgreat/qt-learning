@@ -101,15 +101,15 @@ class GLScene {
     // 渲染
     Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
     viewObj->shade(shader, lights, cameraPos);
-    // View矩阵
-    viewObj->vertices = viewObj->vertices * camera.viewMatrix();
-    // 投影矩阵
-    viewObj->vertices = viewObj->vertices * projection.projMatrix();
+
+    // 视图变换 * 投影变换 * 视口变换
+    Eigen::Matrix4d mtx = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
+    viewObj->vertices = viewObj->vertices * mtx;
+
     // w归一化
     viewObj->vertices.array().colwise() /=
         viewObj->vertices.col(viewObj->vertices.cols() - 1).array();
-    // 视口变换
-    viewObj->vertices = viewObj->vertices * viewportMatrix();
+
     return viewObj;
   }
 
