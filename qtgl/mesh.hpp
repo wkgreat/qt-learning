@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include "affineutils.hpp"
+#include "objmodel.hpp"
 #include "shader.hpp"
 
 namespace qtgl {
@@ -246,6 +247,8 @@ class GLMesh : public GLObject {
   }
 
   static GLMesh* readFromObjFile(std::string fpath);
+
+  static GLMesh* fromObjModel(ObjModel* model);
 
   void shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 

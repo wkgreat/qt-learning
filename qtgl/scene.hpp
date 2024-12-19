@@ -120,24 +120,24 @@ class GLScene {
 
   void draw(QPainter& painter) {
     fragments = initFragmentsBuffer();  // TODO clear rather than init new
-    if (this->showAxis) {
-      GLObject* viewObj;
-      // x
-      viewObj = meshToView(axis[0]);
-      viewObj->rasterize(fragments);
-      delete viewObj;
-      viewObj = nullptr;
-      // y
-      viewObj = meshToView(axis[1]);
-      viewObj->rasterize(fragments);
-      delete viewObj;
-      viewObj = nullptr;
-      // z
-      viewObj = meshToView(axis[2]);
-      viewObj->rasterize(fragments);
-      delete viewObj;
-      viewObj = nullptr;
-    }
+    // if (this->showAxis) {
+    //   GLObject* viewObj;
+    //   // x
+    //   viewObj = meshToView(axis[0]);
+    //   viewObj->rasterize(fragments);
+    //   delete viewObj;
+    //   viewObj = nullptr;
+    //   // y
+    //   viewObj = meshToView(axis[1]);
+    //   viewObj->rasterize(fragments);
+    //   delete viewObj;
+    //   viewObj = nullptr;
+    //   // z
+    //   viewObj = meshToView(axis[2]);
+    //   viewObj->rasterize(fragments);
+    //   delete viewObj;
+    //   viewObj = nullptr;
+    // }
     for (GLObject* obj : objs) {
       GLObject* viewObj = meshToView(obj);
       viewObj->rasterize(fragments);

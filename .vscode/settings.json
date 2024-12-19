@@ -86,6 +86,7 @@
         "qhboxlayout": "cpp",
         "qvboxlayout": "cpp",
         "fstream": "cpp",
-        "qstringlist": "cpp"
+        "qstringlist": "cpp",
+        "qstring": "cpp"
     }
 }

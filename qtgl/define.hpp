@@ -14,6 +14,8 @@ using Normal = Eigen::Vector3d;
 using Normals = Eigen::Matrix<double, Eigen::Dynamic, 3>;
 using NormIndex = Eigen::Vector3i;
 using NormIndices = Eigen::Matrix<int, Eigen::Dynamic, 3>;
+using TexCoord = Eigen::Vector2d;
+using TexCoords = Eigen::Matrix<double, Eigen::Dynamic, 2>;
 
 struct Color {
   short R;
