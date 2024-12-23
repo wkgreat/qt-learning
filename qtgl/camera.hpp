@@ -2,6 +2,7 @@
 
 #include "affineutils.hpp"
 #include "define.hpp"
+#include "mathutils.hpp"
 
 namespace qtgl {
 /*
@@ -52,7 +53,7 @@ class GLCamera {
     d.normalize();
     this->pitch = asinf(-d[1]);
     this->heading = atan2f(d[0], d[2]);
-    this->roll = 0;
+    this->roll = MathUtils::toRadians(180);
     this->setPosition(fx, fy, fz);
   }
 

@@ -90,7 +90,7 @@ class GLScene {
     double hh = this->viewHeight / 2;
     Eigen::Matrix4d viewMtx;
     viewMtx << hw, 0, 0, 0,  //
-        0, -hh, 0, 0,        //
+        0, hh, 0, 0,         //
         0, 0, 1, 0,          //
         hw, hh, 0, 1;        //
     return viewMtx;
@@ -100,7 +100,7 @@ class GLScene {
     GLObject* viewObj = obj->clone();
     // 渲染
     Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
-    viewObj->shade(shader, lights, cameraPos);
+    viewObj->shadeVertices(shader, lights, cameraPos);
 
     // 视图变换 * 投影变换 * 视口变换
     Eigen::Matrix4d mtx = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
@@ -120,6 +120,7 @@ class GLScene {
 
   void draw(QPainter& painter) {
     fragments = initFragmentsBuffer();  // TODO clear rather than init new
+    Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
     // if (this->showAxis) {
     //   GLObject* viewObj;
     //   // x

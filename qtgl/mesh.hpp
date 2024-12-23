@@ -9,6 +9,7 @@
 #include "affineutils.hpp"
 #include "objmodel.hpp"
 #include "shader.hpp"
+#include "texture.hpp"
 
 namespace qtgl {
 
@@ -35,7 +36,8 @@ class GLObject {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
   virtual void draw(QPainter& painter) = 0;
-  virtual void shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) = 0;
+  virtual void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
+                             Vertice& cameraPos) = 0;
   virtual void rasterize(Fragments& fragments) = 0;
 };
 
@@ -61,7 +63,7 @@ class GLLine : public GLObject {
     Vertice p2 = vertices.row(0);
     painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
   }
-  void shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
+  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
     // TODO
   }
   void rasterize(Fragments& fragments) {
@@ -78,6 +80,7 @@ class GLMeshGroup : public GLObject {
   Indices3 indices;
   NormIndices normIndices;
   std::vector<std::vector<Color01>> colors;
+  std::vector<TexRef> texrefs;
 
   GLMeshGroup(GLMesh* parent, std::string& name) {
     this->parent = parent;
@@ -103,45 +106,19 @@ class GLMeshGroup : public GLObject {
     g->indices = indices;
     g->normIndices = normIndices;
     g->colors = colors;
+    g->texrefs = texrefs;
     return g;
   }
   void draw(QPainter& painter) {
     // TODO
   }
 
-  void shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
+  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
   void rasterize(Fragments& fragments);
 
-  void rasterizeTriangle(Triangle& t, std::vector<Color01>& clrs, Fragments& fragments) {
-    // mbr
-    int xmin = static_cast<int>(std::min(std::min(t.x0(), t.x1()), t.x2()));
-    int xmax = static_cast<int>(std::max(std::max(t.x0(), t.x1()), t.x2()));
-    int ymin = static_cast<int>(std::min(std::min(t.y0(), t.y1()), t.y2()));
-    int ymax = static_cast<int>(std::max(std::max(t.y0(), t.y1()), t.y2()));
-
-    double depth;
-    Color01 color;
-    Triangle::BarycentricCoordnates coord;
-
-    for (int x = xmin; x <= xmax; ++x) {
-      if (x < 0 || x >= fragments[0].size()) continue;
-      for (int y = ymin; y <= ymax; ++y) {
-        if (y < 0 || y >= fragments.size()) continue;
-        coord = t.resovleBarycentricCoordnates(x, y);
-        if (coord.alpha >= 0 && coord.beta >= 0 && coord.gamma >= 0) {
-          depth = coord.alpha * t.z0() + coord.beta * t.z1() + coord.gamma * t.z2();
-          if (depth < fragments[y][x].depth) {
-            color.R = coord.alpha * clrs[0].R + coord.beta * clrs[1].R + coord.gamma * clrs[2].R;
-            color.G = coord.alpha * clrs[0].G + coord.beta * clrs[1].G + coord.gamma * clrs[2].G;
-            color.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
-            fragments[y][x].color = color;
-            fragments[y][x].depth = depth;
-          }
-        }
-      }
-    }
-  }
+  void rasterizeTriangle(Triangle2& t, std::vector<Color01>& clrs, Fragments& fragments,
+                         GLTexture* texture);
 
   void drawSkeleton(QPainter& painter) {
     int n = indices.rows();
@@ -167,13 +144,19 @@ class GLMesh : public GLObject {
   const static Color01 defaultColor;
   const static std::string defaultGroup;
   Normals normals;
+  TexCoords texcoords;
   std::map<std::string, GLMeshGroup*> groups;
+  std::map<std::string, GLTexture*> textures;
 
   GLMesh() = default;
   ~GLMesh() {
     for (auto g : groups) {
       delete g.second;
     }
+    // TODO 设置公共纹理缓冲
+    //  for (auto t : textures) {
+    //    delete t.second;
+    //  }
   };
   GLMesh(const GLMesh& mesh) : GLObject(mesh) { groups = mesh.groups; }
   GLObject* clone() {
@@ -185,6 +168,8 @@ class GLMesh : public GLObject {
       p->groups[g.first] = reinterpret_cast<GLMeshGroup*>((g.second)->clone());
       p->groups[g.first]->parent = p;
     }
+    p->texcoords = this->texcoords;
+    p->textures = this->textures;
     return p;
   }
 
@@ -225,6 +210,12 @@ class GLMesh : public GLObject {
     group->addNormIndex(idx);
   }
 
+  void pushTexCoord(double u, double v) {
+    TexCoord t(u, v);
+    texcoords.conservativeResize(texcoords.rows() + 1, texcoords.cols());
+    texcoords.row(texcoords.rows() - 1) = t;
+  }
+
   void rotate_x(double a) {
     this->vertices = AffineUtils::rotate_x(this->vertices, a);
     this->normals = AffineUtils::normal_rotate_x(this->normals, a);
@@ -250,7 +241,7 @@ class GLMesh : public GLObject {
 
   static GLMesh* fromObjModel(ObjModel* model);
 
-  void shade(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
+  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
   void rasterize(Fragments& fragments);
 

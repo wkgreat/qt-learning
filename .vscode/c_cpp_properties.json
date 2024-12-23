@@ -8,7 +8,8 @@
                 "E:/vcpkg/installed/x64-windows/include/qt5",
                 "E:/vcpkg/installed/x64-windows/include/qt5/QtCore",
                 "E:/vcpkg/installed/x64-windows/include/qt5/QtGui",
-                "E:/vcpkg/installed/x64-windows/include/eigen3"
+                "E:/vcpkg/installed/x64-windows/include/eigen3",
+                "E:/vcpkg/installed/x64-windows/include"
             ],
             "defines": [
                 "_DEBUG",

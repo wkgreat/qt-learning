@@ -133,6 +133,110 @@ class Triangle {
   }
 };
 
+class Texture;
+
+class Triangle2 {
+ private:
+  Vertice p0, p1, p2;
+  Vertice hp0, hp1, hp2;
+  Normal n0, n1, n2;
+  TexCoord t0, t1, t2;
+  bool hastexture = false;
+  double f_alpha, f_beta, f_gamma;
+  double f01(double x, double y) {
+    return (hy0() - hy1()) * x + (hx1() - hx0()) * y + hx0() * hy1() - hx1() * hy0();
+  }
+  double f12(double x, double y) {
+    return (hy1() - hy2()) * x + (hx2() - hx1()) * y + hx1() * hy2() - hx2() * hy1();
+  }
+  double f20(double x, double y) {
+    return (hy2() - hy0()) * x + (hx0() - hx2()) * y + hx2() * hy0() - hx0() * hy2();
+  }
+
+ public:
+  Triangle2(Vertice& p0, Vertice& p1, Vertice& p2, Normal& n0, Normal& n1, Normal& n2) {
+    this->p0 = p0;
+    this->p1 = p1;
+    this->p2 = p2;
+
+    this->n0 = n0;
+    this->n1 = n1;
+    this->n2 = n2;
+
+    this->hp0 = p0 / p0[3];
+    this->hp1 = p1 / p1[3];
+    this->hp2 = p2 / p2[3];
+
+    f_alpha = f12(hx0(), hy0());
+    f_beta = f20(hx1(), hy1());
+    f_gamma = f01(hx2(), hy2());
+
+    hastexture = false;
+  }
+  Triangle2(Vertice& p0, Vertice& p1, Vertice& p2, Normal& n0, Normal& n1, Normal& n2, TexCoord& t0,
+            TexCoord& t1, TexCoord& t2) {
+    this->p0 = p0;
+    this->p1 = p1;
+    this->p2 = p2;
+
+    this->n0 = n0;
+    this->n1 = n1;
+    this->n2 = n2;
+
+    this->t0 = t0;
+    this->t1 = t1;
+    this->t2 = t2;
+
+    this->hp0 = p0 / p0[3];
+    this->hp1 = p1 / p1[3];
+    this->hp2 = p2 / p2[3];
+
+    f_alpha = f12(hx0(), hy0());
+    f_beta = f20(hx1(), hy1());
+    f_gamma = f01(hx2(), hy2());
+
+    hastexture = true;
+  }
+
+  inline double hx0() const { return hp0[0]; }
+  inline double hy0() const { return hp0[1]; }
+  inline double hz0() const { return hp0[2]; }
+
+  inline double hx1() const { return hp1[0]; }
+  inline double hy1() const { return hp1[1]; }
+  inline double hz1() const { return hp1[2]; }
+
+  inline double hx2() const { return hp2[0]; }
+  inline double hy2() const { return hp2[1]; }
+  inline double hz2() const { return hp2[2]; }
+
+  Normal& getNormal0() { return n0; }
+  Normal& getNormal1() { return n1; }
+  Normal& getNormal2() { return n2; }
+
+  bool getHasTexture() const { return hastexture; }
+
+  TexCoord& getTexCoord0() { return t0; }
+  TexCoord& getTexCoord1() { return t1; }
+  TexCoord& getTexCoord2() { return t2; }
+
+  // 重心坐标
+  struct BarycentricCoordnates {
+    double alpha;
+    double beta;
+    double gamma;
+  };
+
+  // 求解重心坐标
+  BarycentricCoordnates resovleBarycentricCoordnates(double x, double y) {
+    BarycentricCoordnates coord;
+    coord.alpha = f12(x, y) / f_alpha;
+    coord.beta = f20(x, y) / f_beta;
+    coord.gamma = f01(x, y) / f_gamma;
+    return coord;
+  }
+};
+
 struct Fragment {
   Color01 color;
   double depth;  // z-buffer

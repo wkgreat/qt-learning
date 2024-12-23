@@ -8,6 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
 
 add_subdirectory(qtguide)
 add_subdirectory(draw2d)

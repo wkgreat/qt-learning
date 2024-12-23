@@ -87,6 +87,21 @@
         "qvboxlayout": "cpp",
         "fstream": "cpp",
         "qstringlist": "cpp",
-        "qstring": "cpp"
+        "qstring": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "cfenv": "cpp",
+        "cinttypes": "cpp",
+        "csignal": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "filesystem": "cpp",
+        "future": "cpp",
+        "source_location": "cpp",
+        "stdfloat": "cpp",
+        "strstream": "cpp",
+        "typeindex": "cpp",
+        "unordered_set": "cpp",
+        "*.ipp": "cpp"
     }
 }
