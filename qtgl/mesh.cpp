@@ -9,21 +9,21 @@ void GLMeshGroup::addIndex3(Index3 idx) {
 void GLMeshGroup::shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
                                 Vertice& cameraPos) {
   int n = indices.rows();
-  if (parent->normals.rows() == 0 || normIndices.rows() == 0) {  // 无法线信息
+  if (parent->getNormals().rows() == 0 || normIndices.rows() == 0) {  // 无法线信息
     return;
   }
   for (int i = 0; i < n; ++i) {
     Index3 idx = indices.row(i);
-    Vertice p0 = parent->vertices.row(idx[0]);
-    Vertice p1 = parent->vertices.row(idx[1]);
-    Vertice p2 = parent->vertices.row(idx[2]);
+    Vertice p0 = parent->getTransformedVertices().row(idx[0]);
+    Vertice p1 = parent->getTransformedVertices().row(idx[1]);
+    Vertice p2 = parent->getTransformedVertices().row(idx[2]);
     Eigen::Vector3d e0 = (cameraPos.head(3) - p0.head(3)).normalized();
     Eigen::Vector3d e1 = (cameraPos.head(3) - p1.head(3)).normalized();
     Eigen::Vector3d e2 = (cameraPos.head(3) - p2.head(3)).normalized();
     NormIndex normIdx = normIndices.row(i);
-    Normal n0 = parent->normals.row(normIdx[0]).normalized();
-    Normal n1 = parent->normals.row(normIdx[1]).normalized();
-    Normal n2 = parent->normals.row(normIdx[2]).normalized();
+    Normal n0 = parent->getTransformedNormals().row(normIdx[0]).normalized();
+    Normal n1 = parent->getTransformedNormals().row(normIdx[1]).normalized();
+    Normal n2 = parent->getTransformedNormals().row(normIdx[2]).normalized();
     Color01 d0 = colors[i][0];
     Color01 d1 = colors[i][1];
     Color01 d2 = colors[i][2];
@@ -48,18 +48,18 @@ void GLMeshGroup::rasterize(Fragments& fragments) {
     Index3 idx = indices.row(i);
     NormIndex normIdx = normIndices.row(i);
     TexRef ref = texrefs[i];
-    Vertice p0 = parent->vertices.row(idx[0]);
-    Vertice p1 = parent->vertices.row(idx[1]);
-    Vertice p2 = parent->vertices.row(idx[2]);
-    Normal n0 = parent->normals.row(normIdx[0]);
-    Normal n1 = parent->normals.row(normIdx[1]);
-    Normal n2 = parent->normals.row(normIdx[2]);
+    Vertice p0 = parent->getTransformedVertices().row(idx[0]);
+    Vertice p1 = parent->getTransformedVertices().row(idx[1]);
+    Vertice p2 = parent->getTransformedVertices().row(idx[2]);
+    Normal n0 = parent->getTransformedNormals().row(normIdx[0]);
+    Normal n1 = parent->getTransformedNormals().row(normIdx[1]);
+    Normal n2 = parent->getTransformedNormals().row(normIdx[2]);
 
     if (ref.indices[0] != -1 && ref.indices[1] != -1 && ref.indices[2] != -1) {
-      GLTexture* texture = parent->textures[ref.mtlname];
-      TexCoord t0 = parent->texcoords.row(ref.indices[0]);
-      TexCoord t1 = parent->texcoords.row(ref.indices[1]);
-      TexCoord t2 = parent->texcoords.row(ref.indices[2]);
+      GLTexture* texture = parent->getTexture(ref.mtlname);
+      TexCoord t0 = parent->getTexCoords().row(ref.indices[0]);
+      TexCoord t1 = parent->getTexCoords().row(ref.indices[1]);
+      TexCoord t2 = parent->getTexCoords().row(ref.indices[2]);
       Triangle2 t(p0, p1, p2, n0, n1, n2, t0, t1, t2);
       std::vector<Color01> clrs = colors[i];
       rasterizeTriangle(t, clrs, fragments, texture);
@@ -135,14 +135,13 @@ GLMesh* GLMesh::fromObjModel(ObjModel* model) {
     std::string name = g.first;
     ObjModelGroup& group = g.second;
     GLMeshGroup* meshGroup = new GLMeshGroup(mesh, name);
-    meshGroup->indices = group.indices;
-    meshGroup->normIndices = group.normIndices;
-    meshGroup->texrefs = group.texrefs;
+    meshGroup->setIndices(group.indices);
+    meshGroup->setNormIndices(group.normIndices);
+    meshGroup->setTexRefs(group.texrefs);
     mesh->groups[name] = meshGroup;
     Color01 white = {1, 1, 1, 1};
-    for (int i = 0; i < meshGroup->indices.rows(); ++i) {
-      meshGroup->colors.push_back({white, white, white});
-    }
+    std::vector<std::vector<Color01>> colors(meshGroup->getIndices().rows(), {white, white, white});
+    meshGroup->setColors(colors);
   }
   if (model->mtllib) {
     for (auto mtl : model->mtllib->mtls) {

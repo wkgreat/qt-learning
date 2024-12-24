@@ -97,6 +97,9 @@ class GLScene {
   }
 
   GLObject* meshToView(GLObject* obj) {
+    // model matrix transfrom
+    obj->transform();
+
     GLObject* viewObj = obj->clone();
     // 渲染
     Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
@@ -104,11 +107,11 @@ class GLScene {
 
     // 视图变换 * 投影变换 * 视口变换
     Eigen::Matrix4d mtx = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
-    viewObj->vertices = viewObj->vertices * mtx;
+    viewObj->transfromedVertices = viewObj->transfromedVertices * mtx;
 
     // w归一化
-    viewObj->vertices.array().colwise() /=
-        viewObj->vertices.col(viewObj->vertices.cols() - 1).array();
+    viewObj->transfromedVertices.array().colwise() /=
+        viewObj->transfromedVertices.col(viewObj->transfromedVertices.cols() - 1).array();
 
     return viewObj;
   }

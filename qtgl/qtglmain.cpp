@@ -18,6 +18,15 @@ int main(int argc, char* argv[]) {
   qtgl::GLMesh* mesh = qtgl::GLMesh::readFromObjFile(fpath);
   widget.getScene().addObj(mesh);
 
+  double angle = 0;
+  widget.setBeforeRender([&angle](qtgl::GLScene& scene) {
+    scene.getObjs()[0]->setModelMatrix(qtgl::AffineUtils::rotateYMtx(angle));
+    angle += 0.01;
+    if (angle > qtgl::MathUtils::PI * 2) {
+      angle -= qtgl::MathUtils::PI * 2;
+    }
+  });
+
   // camera an projection
   widget.getScene().getCamera().lookAt(-1000, 1000, 1000, 0, 0, 0);
   widget.getScene().getProjection().mode = qtgl::GLProjectionMode::PRESPECTIVE;

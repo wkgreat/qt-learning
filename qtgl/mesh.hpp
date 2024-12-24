@@ -14,12 +14,29 @@
 namespace qtgl {
 
 class GLObject {
- public:
+ protected:
   Vertices vertices;
+  Eigen::Matrix4d modelMatrix = Eigen::Matrix4d::Identity();
+  Vertices transfromedVertices;
+
+ public:
   GLObject() = default;
   virtual ~GLObject() = default;
-  GLObject(const GLObject& obj) { vertices = obj.vertices; }
+  GLObject(const GLObject& obj) {
+    vertices = obj.vertices;
+    modelMatrix = obj.modelMatrix;
+    transfromedVertices = obj.transfromedVertices;
+  }
+
+  friend class GLScene;
+
   virtual GLObject* clone() = 0;
+
+  Vertices& getVertices() { return vertices; }
+  void setVertices(Vertices& vertices) { this->vertices = vertices; }
+  Eigen::Matrix4d& getModelMatrix() { return modelMatrix; }
+  void setModelMatrix(Eigen::Matrix4d& modelMatrix) { this->modelMatrix = modelMatrix; }
+  Vertices& getTransformedVertices() { return transfromedVertices; }
 
   void pushVertice(double x, double y, double z) {
     Vertice v(x, y, z, 1);
@@ -35,6 +52,7 @@ class GLObject {
   virtual void scale(double x, double y, double z) {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
+  virtual void transform() = 0;
   virtual void draw(QPainter& painter) = 0;
   virtual void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
                              Vertice& cameraPos) = 0;
@@ -46,10 +64,16 @@ class GLLine : public GLObject {
  public:
   GLLine() = default;
   ~GLLine() = default;
-  GLLine(const GLLine& line) : GLObject(line) {}
+  GLLine(const GLLine& line) : GLObject(line) {
+    vertices = line.vertices;
+    modelMatrix = line.modelMatrix;
+    transfromedVertices = line.transfromedVertices;
+  }
   virtual GLObject* clone() {
     GLLine* p = new GLLine;
     p->vertices = this->vertices;
+    p->modelMatrix = this->modelMatrix;
+    p->transfromedVertices = this->transfromedVertices;
     return p;
   }
   void draw(QPainter& painter) {
@@ -63,6 +87,11 @@ class GLLine : public GLObject {
     Vertice p2 = vertices.row(0);
     painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
   }
+
+  void transform() {
+    // TODO
+  }
+
   void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
     // TODO
   }
@@ -74,7 +103,7 @@ class GLLine : public GLObject {
 class GLMesh;
 
 class GLMeshGroup : public GLObject {
- public:
+ protected:
   GLMesh* parent;
   std::string name;
   Indices3 indices;
@@ -82,10 +111,22 @@ class GLMeshGroup : public GLObject {
   std::vector<std::vector<Color01>> colors;
   std::vector<TexRef> texrefs;
 
+ public:
   GLMeshGroup(GLMesh* parent, std::string& name) {
     this->parent = parent;
     this->name = name;
   }
+
+  GLMesh* getParent() { return parent; }
+  void setParent(GLMesh* parent) { this->parent = parent; }
+  Indices3& getIndices() { return indices; }
+  void setIndices(Indices3& indices) { this->indices = indices; }
+  NormIndices& getNormIndices() { return normIndices; }
+  void setNormIndices(NormIndices& normIndices) { this->normIndices = normIndices; }
+  std::vector<std::vector<Color01>>& getColors() { return colors; }
+  void setColors(std::vector<std::vector<Color01>>& colors) { this->colors = colors; }
+  std::vector<TexRef>& getTexRefs() { return texrefs; }
+  void setTexRefs(std::vector<TexRef>& texrefs) { this->texrefs = texrefs; }
 
   void addIndex3(Index3 idx);
 
@@ -110,6 +151,10 @@ class GLMeshGroup : public GLObject {
     return g;
   }
   void draw(QPainter& painter) {
+    // TODO
+  }
+
+  void transform() {
     // TODO
   }
 
@@ -140,13 +185,16 @@ class GLMeshGroup : public GLObject {
 };
 
 class GLMesh : public GLObject {
- public:
-  const static Color01 defaultColor;
-  const static std::string defaultGroup;
+ protected:
   Normals normals;
+  Normals transfromedNormals;
   TexCoords texcoords;
   std::map<std::string, GLMeshGroup*> groups;
   std::map<std::string, GLTexture*> textures;
+
+ public:
+  const static Color01 defaultColor;
+  const static std::string defaultGroup;
 
   GLMesh() = default;
   ~GLMesh() {
@@ -158,7 +206,13 @@ class GLMesh : public GLObject {
     //    delete t.second;
     //  }
   };
-  GLMesh(const GLMesh& mesh) : GLObject(mesh) { groups = mesh.groups; }
+  GLMesh(const GLMesh& mesh) : GLObject(mesh) {
+    groups = mesh.groups;
+    normals = mesh.normals;
+    transfromedNormals = mesh.transfromedNormals;
+    texcoords = mesh.texcoords;
+    textures = mesh.textures;
+  }
   GLObject* clone() {
     GLMesh* p = new GLMesh;
     p->groups = this->groups;
@@ -166,10 +220,13 @@ class GLMesh : public GLObject {
     p->normals = this->normals;
     for (auto g : groups) {
       p->groups[g.first] = reinterpret_cast<GLMeshGroup*>((g.second)->clone());
-      p->groups[g.first]->parent = p;
+      p->groups[g.first]->setParent(p);
     }
     p->texcoords = this->texcoords;
     p->textures = this->textures;
+    p->modelMatrix = this->modelMatrix;
+    p->transfromedVertices = this->transfromedVertices;
+    p->transfromedNormals = this->transfromedNormals;
     return p;
   }
 
@@ -179,6 +236,16 @@ class GLMesh : public GLObject {
     } else {
       groups[name] = new GLMeshGroup(this, name);
       return groups[name];
+    }
+  }
+  Normals& getNormals() { return normals; }
+  Normals& getTransformedNormals() { return transfromedNormals; }
+  TexCoords& getTexCoords() { return texcoords; }
+  GLTexture* getTexture(std::string& name) {
+    if (textures.count(name)) {
+      return textures[name];
+    } else {
+      return nullptr;
     }
   }
 
@@ -193,10 +260,11 @@ class GLMesh : public GLObject {
 
   void addIndex3(std::string& groupName, Index3 idx, Color01 clr0, Color01 clr1, Color01 clr2) {
     GLMeshGroup* group = getGroup(groupName);
-    group->indices.conservativeResize(group->indices.rows() + 1, group->indices.cols());
-    group->indices.row(group->indices.rows() - 1) = idx;
+    Indices3& indices = group->getIndices();
+    indices.conservativeResize(indices.rows() + 1, indices.cols());
+    indices.row(indices.rows() - 1) = idx;
     std::vector<Color01> tricolor{clr0, clr1, clr2};
-    group->colors.push_back(std::move(tricolor));
+    group->getColors().push_back(std::move(tricolor));
   }
 
   void pushNormal(double a, double b, double c) {
@@ -235,6 +303,12 @@ class GLMesh : public GLObject {
   void scale(double x, double y, double z) {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
     this->normals = AffineUtils::norm_scale(this->normals, x, y, z);
+  }
+
+  void transform() {
+    this->transfromedVertices = AffineUtils::affine(this->vertices, this->modelMatrix);
+    Eigen::Matrix3d m = this->modelMatrix.block(0, 0, 3, 3);
+    this->transfromedNormals = AffineUtils::norm_affine(this->normals, m);
   }
 
   static GLMesh* readFromObjFile(std::string fpath);

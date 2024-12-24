@@ -5,6 +5,7 @@
 #include <QSlider>
 #include <QTimer>
 #include <QWidget>
+#include <functional>
 #include "scene.hpp"
 
 namespace qtgl {
@@ -12,6 +13,7 @@ namespace qtgl {
 class GLRenderWidget : public QWidget {
  private:
   GLScene scene;
+  std::function<void(GLScene&)> beforeRender = [](GLScene& scene) {};
 
  public:
   GLRenderWidget(QWidget* parent = nullptr) : QWidget(parent) {
@@ -27,14 +29,20 @@ class GLRenderWidget : public QWidget {
     QWidget::setFixedSize(w, h);
   }
 
+  void setBeforeRender(std::function<void(GLScene&)> beforeRender) {
+    this->beforeRender = beforeRender;
+  }
+
   GLScene& getScene() { return scene; }
 
-  void refresh() { this->update(); }
+  void refresh() {
+    beforeRender(scene);
+    this->update();
+  }
 
   void paintEvent(QPaintEvent* event) override {
     QPainter painter(this);
     painter.eraseRect(0, 0, this->width(), this->height());  // 清除画布
-    (scene.getObjs()[0])->rotate_y(MathUtils::toRadians(1));
     scene.draw(painter);
   }
 };
