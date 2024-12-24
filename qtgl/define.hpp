@@ -220,6 +220,10 @@ class Triangle2 {
   TexCoord& getTexCoord1() { return t1; }
   TexCoord& getTexCoord2() { return t2; }
 
+  double w0() const { return p0[3]; }
+  double w1() const { return p1[3]; }
+  double w2() const { return p2[3]; }
+
   // 重心坐标
   struct BarycentricCoordnates {
     double alpha;

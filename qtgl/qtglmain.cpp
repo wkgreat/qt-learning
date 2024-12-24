@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
   widget.getScene().addObj(mesh);
 
   // camera an projection
-  widget.getScene().getCamera().lookAt(1000, 1000, 1000, 0, 0, 0);
+  widget.getScene().getCamera().lookAt(-1000, 1000, 1000, 0, 0, 0);
   widget.getScene().getProjection().mode = qtgl::GLProjectionMode::PRESPECTIVE;
 
   // light

@@ -96,8 +96,7 @@ void GLMeshGroup::rasterizeTriangle(Triangle2& t, std::vector<Color01>& clrs, Fr
           color.B = coord.alpha * clrs[0].B + coord.beta * clrs[1].B + coord.gamma * clrs[2].B;
 
           if (t.getHasTexture() && texture) {
-            TexCoord tc = coord.alpha * t.getTexCoord0() + coord.beta * t.getTexCoord1() +
-                          coord.gamma * t.getTexCoord2();
+            TexCoord tc = texture->interpolateTexCoord(t, coord.alpha, coord.beta, coord.gamma);
             Color01 texColor = texture->sample(tc);
             color.R *= texColor.R;
             color.G *= texColor.G;
