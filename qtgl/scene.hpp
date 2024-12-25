@@ -19,6 +19,9 @@ class GLScene {
   std::vector<GLLight*> lights;
   Fragments fragments;
 
+  Eigen::Matrix4d transformMatrix;
+  Eigen::Matrix4d invTransformMatrix;
+
  public:
   GLScene(double viewHeight = 768.0, double viewWidth = 1024.0)
       : viewHeight(viewHeight), viewWidth(viewWidth) {
@@ -96,20 +99,39 @@ class GLScene {
     return viewMtx;
   }
 
-  GLObject* meshToView(GLObject* obj) {
-    // model matrix transfrom
-    obj->transform();
+  void calculateTransformMatrix() {
+    // 视图变换矩阵 * 投影变换矩阵 * 视口变换矩阵
+    transformMatrix = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
+    // 逆变换矩阵 用于将屏幕坐标转换为世界坐标
+    invTransformMatrix = transformMatrix.inverse();
+  }
 
-    GLObject* viewObj = obj->clone();
-    // 渲染
-    Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
-    viewObj->shadeVertices(shader, lights, cameraPos);
+  // screen coordinator back to world coordinator
+  Vertice screenVerticeBackToWorldVertice(double x, double y, double z, double w) {
+    Vertice v(x, y, z, w);
+    v = v.transpose() * invTransformMatrix;
+    v /= v[3];
+    return v;
+  }
 
-    // 视图变换 * 投影变换 * 视口变换
-    Eigen::Matrix4d mtx = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
-    viewObj->transfromedVertices = viewObj->transfromedVertices * mtx;
+  Vertice screenVerticeBackToWorldVertice(Vertice& v) {
+    return screenVerticeBackToWorldVertice(v[0], v[1], v[2], v[3]);
+  }
 
-    return viewObj;
+  void meshTransformToScreen(GLObject* obj) {
+    // // 渲染 TODO 渲染移动至光栅化期间
+    // Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
+    // obj->shadeVertices(shader, lights, cameraPos);
+
+    // 计算变换矩阵(视图变换+投影变换+视口变换)及逆矩阵
+    calculateTransformMatrix();
+
+    // 准备变换
+    obj->prepareTransform();
+    // 模型变换
+    obj->transformWithModelMatrix();
+    // 视图变换 + 投影变换 + 视口变换
+    obj->transformWithMatrix(this->transformMatrix);
   }
 
   Fragments initFragmentsBuffer() {
@@ -139,9 +161,8 @@ class GLScene {
     //   viewObj = nullptr;
     // }
     for (GLObject* obj : objs) {
-      GLObject* viewObj = meshToView(obj);
-      viewObj->rasterize(fragments);
-      delete viewObj;
+      meshTransformToScreen(obj);
+      obj->rasterize(fragments);
     }
     for (int h = 0; h < this->viewHeight; ++h) {
       for (int w = 0; w < this->viewWidth; ++w) {

@@ -102,6 +102,9 @@
         "strstream": "cpp",
         "typeindex": "cpp",
         "unordered_set": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "coroutine": "cpp",
+        "shared_mutex": "cpp",
+        "stack": "cpp"
     }
 }

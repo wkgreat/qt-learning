@@ -52,7 +52,9 @@ class GLObject {
   virtual void scale(double x, double y, double z) {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
-  virtual void transform() = 0;
+  virtual void prepareTransform() = 0;
+  virtual void transformWithMatrix(Eigen::Matrix4d& mtx) = 0;
+  virtual void transformWithModelMatrix() = 0;
   virtual void draw(QPainter& painter) = 0;
   virtual void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
                              Vertice& cameraPos) = 0;
@@ -88,7 +90,14 @@ class GLLine : public GLObject {
     painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
   }
 
-  void transform() {
+  void prepareTransform() {
+    // TODO
+  }
+
+  void transformWithMatrix(Eigen::Matrix4d& mtx) {
+    // TODO
+  }
+  void transformWithModelMatrix() {
     // TODO
   }
 
@@ -154,7 +163,14 @@ class GLMeshGroup : public GLObject {
     // TODO
   }
 
-  void transform() {
+  void prepareTransform() {
+    // TODO
+  }
+
+  void transformWithMatrix(Eigen::Matrix4d& mtx) {
+    // TODO
+  }
+  void transformWithModelMatrix() {
     // TODO
   }
 
@@ -310,6 +326,18 @@ class GLMesh : public GLObject {
     Eigen::Matrix3d m = this->modelMatrix.block(0, 0, 3, 3);
     this->transfromedNormals = AffineUtils::norm_affine(this->normals, m);
   }
+
+  void prepareTransform() {
+    this->transfromedVertices = this->vertices;
+    this->transfromedNormals = this->normals;
+  }
+
+  void transformWithMatrix(Eigen::Matrix4d& mtx) {
+    this->transfromedVertices = AffineUtils::affine(this->transfromedVertices, mtx);
+    Eigen::Matrix3d m = mtx.block(0, 0, 3, 3);
+    this->transfromedNormals = AffineUtils::norm_affine(this->transfromedNormals, m);
+  }
+  void transformWithModelMatrix() { transformWithMatrix(this->modelMatrix); }
 
   static GLMesh* readFromObjFile(std::string fpath);
 
