@@ -109,10 +109,6 @@ class GLScene {
     Eigen::Matrix4d mtx = camera.viewMatrix() * projection.projMatrix() * viewportMatrix();
     viewObj->transfromedVertices = viewObj->transfromedVertices * mtx;
 
-    // w归一化
-    viewObj->transfromedVertices.array().colwise() /=
-        viewObj->transfromedVertices.col(viewObj->transfromedVertices.cols() - 1).array();
-
     return viewObj;
   }
 
