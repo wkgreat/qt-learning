@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include "define.hpp"
+#include "material.hpp"
 #include "texture.hpp"
 
 namespace qtgl {
@@ -18,11 +19,12 @@ class ObjMaterial {
   double ns;
   Color01 ka;
   Color01 kd;
-  Color01 Ks;
+  Color01 ks;
   Color01 ke;
   double ni;
   double d;
   int illum;
+  std::string map_ka = "";
   std::string map_kd = "";
   std::string map_refl = "";
 
@@ -32,12 +34,35 @@ class ObjMaterial {
     this->name = name;
   };
 
-  GLTexture* toTexture() {
-    if (map_kd.empty()) {
-      return nullptr;
-    } else {
-      return new InterpolateGLTexture(dirpath + "/" + map_kd);
+  GLMaterial* toGLMaterial() {
+    GLMaterial* material = new GLMaterial();
+    material->setAmbient(ka);
+    material->setDiffuse(kd);
+    material->setSpecular(ks);
+    material->setEmmisive(ke);
+    material->setSpecularHighlight(ns);
+    material->setOpticalDensity(ni);
+    material->setDissolve(d);
+    if (illum == 0) {
+      material->setIllumination(IlluminationModel::CONSTANT);
+    } else if (illum == 1) {
+      material->setIllumination(IlluminationModel::LAMBERTIAN);
+    } else if (illum == 2) {
+      material->setIllumination(IlluminationModel::LAMBERTIAN_BLINN_PHONG);
     }
+    if (!map_ka.empty()) {
+      GLTexture* t = new InterpolateGLTexture(dirpath + "/" + map_ka);
+      material->setAmbientTexture(t);
+    } else {
+      material->setAmbientTexture(nullptr);
+    }
+    if (!map_kd.empty()) {
+      GLTexture* t = new InterpolateGLTexture(dirpath + "/" + map_kd);
+      material->setDiffuseTexture(t);
+    } else {
+      material->setDiffuseTexture(nullptr);
+    }
+    return material;
   }
 };
 

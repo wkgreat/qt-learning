@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "mesh.hpp"
 #include "render.hpp"
 
 int main(int argc, char* argv[]) {
@@ -38,9 +39,9 @@ int main(int argc, char* argv[]) {
   widget.getScene().addLight(lgt);
 
   // shader
-  qtgl::LambertianPhongGLShader* shader =
-      new qtgl::LambertianPhongGLShader(1.0, {0.5, 0.5, 0.5, 0});
-  widget.getScene().setShader(shader);
+  // qtgl::LambertianPhongGLShader* shader =
+  //     new qtgl::LambertianPhongGLShader(1.0, {0.5, 0.5, 0.5, 0});
+  // widget.getScene().setShader(shader);
 
   layout->addWidget(&widget, 0, 0);
 

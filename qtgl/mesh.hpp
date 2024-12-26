@@ -7,11 +7,15 @@
 #include <iostream>
 #include <map>
 #include "affineutils.hpp"
+#include "material.hpp"
 #include "objmodel.hpp"
+#include "scene.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 
 namespace qtgl {
+
+class GLScene;
 
 class GLObject {
  protected:
@@ -58,55 +62,7 @@ class GLObject {
   virtual void draw(QPainter& painter) = 0;
   virtual void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
                              Vertice& cameraPos) = 0;
-  virtual void rasterize(Fragments& fragments) = 0;
-};
-
-// TODO 使用midpoint算法进行光栅化
-class GLLine : public GLObject {
- public:
-  GLLine() = default;
-  ~GLLine() = default;
-  GLLine(const GLLine& line) : GLObject(line) {
-    vertices = line.vertices;
-    modelMatrix = line.modelMatrix;
-    transfromedVertices = line.transfromedVertices;
-  }
-  virtual GLObject* clone() {
-    GLLine* p = new GLLine;
-    p->vertices = this->vertices;
-    p->modelMatrix = this->modelMatrix;
-    p->transfromedVertices = this->transfromedVertices;
-    return p;
-  }
-  void draw(QPainter& painter) {
-    int n = vertices.rows();
-    for (int i = 1; i < n; ++i) {
-      Vertice p1 = vertices.row(i - 1);
-      Vertice p2 = vertices.row(i);
-      painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
-    }
-    Vertice p1 = vertices.row(n - 1);
-    Vertice p2 = vertices.row(0);
-    painter.drawLine(p1[0], p1[1], p2[0], p2[1]);
-  }
-
-  void prepareTransform() {
-    // TODO
-  }
-
-  void transformWithMatrix(Eigen::Matrix4d& mtx) {
-    // TODO
-  }
-  void transformWithModelMatrix() {
-    // TODO
-  }
-
-  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
-    // TODO
-  }
-  void rasterize(Fragments& fragments) {
-    // TODO
-  }
+  virtual void rasterize(GLScene& scene) = 0;
 };
 
 class GLMesh;
@@ -125,6 +81,7 @@ class GLMeshGroup : public GLObject {
     this->parent = parent;
     this->name = name;
   }
+  ~GLMeshGroup() = default;
 
   GLMesh* getParent() { return parent; }
   void setParent(GLMesh* parent) { this->parent = parent; }
@@ -176,10 +133,10 @@ class GLMeshGroup : public GLObject {
 
   void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
-  void rasterize(Fragments& fragments);
+  void rasterize(GLScene& scene);
 
-  void rasterizeTriangle(Triangle2& t, std::vector<Color01>& clrs, Fragments& fragments,
-                         GLTexture* texture);
+  void rasterizeTriangle(GLScene& scene, Triangle2& t, std::vector<Color01>& clrs,
+                         GLMaterial* material);
 
   void drawSkeleton(QPainter& painter) {
     int n = indices.rows();
@@ -206,7 +163,8 @@ class GLMesh : public GLObject {
   Normals transfromedNormals;
   TexCoords texcoords;
   std::map<std::string, GLMeshGroup*> groups;
-  std::map<std::string, GLTexture*> textures;
+  // std::map<std::string, GLTexture*> textures;
+  std::map<std::string, GLMaterial*> materials;
 
  public:
   const static Color01 defaultColor;
@@ -217,17 +175,17 @@ class GLMesh : public GLObject {
     for (auto g : groups) {
       delete g.second;
     }
-    // TODO 设置公共纹理缓冲
-    //  for (auto t : textures) {
-    //    delete t.second;
-    //  }
+    for (auto m : materials) {
+      delete m.second;
+    }
   };
   GLMesh(const GLMesh& mesh) : GLObject(mesh) {
     groups = mesh.groups;
     normals = mesh.normals;
     transfromedNormals = mesh.transfromedNormals;
     texcoords = mesh.texcoords;
-    textures = mesh.textures;
+    // textures = mesh.textures;
+    materials = mesh.materials;  // TODO: deepcopy?
   }
   GLObject* clone() {
     GLMesh* p = new GLMesh;
@@ -239,7 +197,8 @@ class GLMesh : public GLObject {
       p->groups[g.first]->setParent(p);
     }
     p->texcoords = this->texcoords;
-    p->textures = this->textures;
+    // p->textures = this->textures;
+    p->materials = this->materials;  // TODO deepcopy?
     p->modelMatrix = this->modelMatrix;
     p->transfromedVertices = this->transfromedVertices;
     p->transfromedNormals = this->transfromedNormals;
@@ -257,9 +216,16 @@ class GLMesh : public GLObject {
   Normals& getNormals() { return normals; }
   Normals& getTransformedNormals() { return transfromedNormals; }
   TexCoords& getTexCoords() { return texcoords; }
-  GLTexture* getTexture(std::string& name) {
-    if (textures.count(name)) {
-      return textures[name];
+  // GLTexture* getTexture(std::string& name) {
+  //   if (textures.count(name)) {
+  //     return textures[name];
+  //   } else {
+  //     return nullptr;
+  //   }
+  // }
+  GLMaterial* getMaterial(std::string name) {
+    if (materials.count(name)) {
+      return materials[name];
     } else {
       return nullptr;
     }
@@ -345,7 +311,7 @@ class GLMesh : public GLObject {
 
   void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
-  void rasterize(Fragments& fragments);
+  void rasterize(GLScene& scene);
 
   void draw(QPainter& painter) {
     // rasterize(painter);

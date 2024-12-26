@@ -36,7 +36,7 @@ class InterpolateGLTexture : public GLTexture {
     i = MAX(0, i);  // TODO 临时添加
     j = MAX(0, j);  // TODO 临时添加
     cv::Vec3b v = mat.at<cv::Vec3b>(i % mat.rows, j % mat.cols);
-    Color01 c = {v[0] / 255.0, v[1] / 255.0, v[2] / 255.0, 1};
+    Color01 c(v[0] / 255.0, v[1] / 255.0, v[2] / 255.0, 1);
     return c;
   }
 

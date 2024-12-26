@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <limits>
 #include <random>
+#include "mathutils.hpp"
 
 namespace qtgl {
 
@@ -30,42 +31,20 @@ struct Color {
   }
 };
 
-struct Color01 {
-  double R;
-  double G;
-  double B;
-  double A;
-  Color01 operator+(Color01& c) {
+using Color01 = Eigen::Vector4d;
+
+struct Color01Utils {
+  static double red(Color01& c) { return c[0]; }
+  static double green(Color01& c) { return c[1]; }
+  static double blue(Color01& c) { return c[2]; }
+  static double alpha(Color01& c) { return c[3]; }
+  static Color01 clamp(Color01& c) {
     Color01 r;
-    r.R = R + c.R;
-    r.G = G + c.G;
-    r.B = B + c.B;
-    r.A = A + c.A;
+    r[0] = MathUtils::limit(c[0], 0, 1);
+    r[1] = MathUtils::limit(c[1], 0, 1);
+    r[2] = MathUtils::limit(c[2], 0, 1);
+    r[3] = MathUtils::limit(c[3], 0, 1);
     return r;
-  }
-  static Color01 random() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> distr(0, 1);
-    return {distr(gen), distr(gen), distr(gen), distr(gen)};
-  }
-  void clamp() {
-    R = R < 0 ? 0 : R;
-    G = G < 0 ? 0 : G;
-    B = B < 0 ? 0 : B;
-    A = A < 0 ? 0 : A;
-    R = R > 1 ? 1 : R;
-    G = G > 1 ? 1 : G;
-    B = B > 1 ? 1 : B;
-    A = A > 1 ? 1 : A;
-  }
-  Color toColor() {
-    Color c;
-    c.R = static_cast<short>(R * 255);
-    c.G = static_cast<short>(G * 255);
-    c.B = static_cast<short>(B * 255);
-    c.A = static_cast<short>(A * 255);
-    return c;
   }
 };
 

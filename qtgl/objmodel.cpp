@@ -28,16 +28,19 @@ ObjMaterialLib* ObjMaterialLib::loadMtlLib(std::string& dirpath, std::string& li
       mtllib->mtls[mtlname].ns = lst[1].toDouble();
     } else if (qline.startsWith("Ka")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
-      mtllib->mtls[mtlname].ka = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble()};
+      mtllib->mtls[mtlname].ka = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble(), 1};
     } else if (qline.startsWith("Kd")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
-      mtllib->mtls[mtlname].kd = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble()};
+      mtllib->mtls[mtlname].kd = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble(), 1};
     } else if (qline.startsWith("Ks")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
-      mtllib->mtls[mtlname].Ks = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble()};
+      mtllib->mtls[mtlname].ks = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble(), 1};
     } else if (qline.startsWith("Ke")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
-      mtllib->mtls[mtlname].ke = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble()};
+      mtllib->mtls[mtlname].ke = {lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble(), 1};
+    } else if (qline.startsWith("Ns")) {
+      QStringList lst = qline.split(QRegExp("\\s+"));
+      mtllib->mtls[mtlname].ns = lst[1].toDouble();
     } else if (qline.startsWith("Ni")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
       mtllib->mtls[mtlname].ni = lst[1].toDouble();
@@ -50,6 +53,9 @@ ObjMaterialLib* ObjMaterialLib::loadMtlLib(std::string& dirpath, std::string& li
     } else if (qline.startsWith("map_refl")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
       mtllib->mtls[mtlname].map_refl = lst[1].toStdString();
+    } else if (qline.startsWith("map_Ka")) {
+      QStringList lst = qline.split(QRegExp("\\s+"));
+      mtllib->mtls[mtlname].map_ka = lst[1].toStdString();
     } else if (qline.startsWith("map_Kd")) {
       QStringList lst = qline.split(QRegExp("\\s+"));
       mtllib->mtls[mtlname].map_kd = lst[1].toStdString();
