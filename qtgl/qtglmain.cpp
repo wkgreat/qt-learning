@@ -12,12 +12,14 @@ int main(int argc, char* argv[]) {
   qtgl::GLRenderWidget widget;
   widget.setFixedSize(1000, 1000);
 
-  // mesh
+  // mesh axis
+  // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\xyz_axis\\xyz_axis.obj";
+  // qtgl::GLMesh* axisMesh = qtgl::GLMesh::readFromObjFile(fpath);
+  // widget.getScene().addObj(axisMesh);
+  // mesh f16
   std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\F16_Fighting_Falcon\\F16fin.obj";
-  // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\teapot.obj";
-  // std::string fpath = "E:\\codes\\practice\\qt-learning\\data\\minicooper.obj";
-  qtgl::GLMesh* mesh = qtgl::GLMesh::readFromObjFile(fpath);
-  widget.getScene().addObj(mesh);
+  qtgl::GLMesh* f16Mesh = qtgl::GLMesh::readFromObjFile(fpath);
+  widget.getScene().addObj(f16Mesh);
 
   double angle = 0;
   widget.setBeforeRender([&angle](qtgl::GLScene& scene) {
@@ -35,13 +37,9 @@ int main(int argc, char* argv[]) {
   // light
   qtgl::PointGLLight* lgt = new qtgl::PointGLLight;
   lgt->intensity = {1, 1, 1, 1};
-  lgt->position = {500, 500, 500, 0};
+  lgt->position = {-500, 500, 500, 0};
   widget.getScene().addLight(lgt);
-
-  // shader
-  // qtgl::LambertianPhongGLShader* shader =
-  //     new qtgl::LambertianPhongGLShader(1.0, {0.5, 0.5, 0.5, 0});
-  // widget.getScene().setShader(shader);
+  widget.getScene().setAmbient({1, 1, 1, 1});
 
   layout->addWidget(&widget, 0, 0);
 

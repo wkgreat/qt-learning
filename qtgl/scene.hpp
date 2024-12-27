@@ -20,6 +20,7 @@ class GLScene {
   std::vector<GLLight*> lights;
   Fragments fragments;
   std::map<IlluminationModel, GLShader*> shadermap;
+  Color01 ambient = {1, 1, 1, 1};
 
   Eigen::Matrix4d transformMatrix;
   Eigen::Matrix4d invTransformMatrix;
@@ -51,6 +52,9 @@ class GLScene {
   }
   GLShader* getShader(IlluminationModel model) { return this->shadermap[model]; }
 
+  void setAmbient(Color01 ambient) { this->ambient = ambient; }
+  Color01 getAmbient() const { return this->ambient; }
+
   void addObj(GLObject* obj) { objs.push_back(obj); }
   void addLight(GLLight* lgt) { lights.push_back(lgt); }
   std::vector<GLLight*>& getLights() { return this->lights; }
@@ -76,14 +80,13 @@ class GLScene {
 
   // screen coordinator back to world coordinator
   Vertice screenVerticeBackToWorldVertice(double x, double y, double z, double w) {
-    Vertice v(x, y, z, w);
+    return screenVerticeBackToWorldVertice({x, y, z, w});
+  }
+
+  Vertice screenVerticeBackToWorldVertice(Vertice v) {
     v = v.transpose() * invTransformMatrix;
     v /= v[3];
     return v;
-  }
-
-  Vertice screenVerticeBackToWorldVertice(Vertice& v) {
-    return screenVerticeBackToWorldVertice(v[0], v[1], v[2], v[3]);
   }
 
   void meshTransformToScreen(GLObject* obj);

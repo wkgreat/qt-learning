@@ -45,6 +45,7 @@ class GLCamera {
   double getHeading() const { return this->heading; }
   double getPitch() const { return this->pitch; }
   double getRool() const { return this->roll; }
+  Vertice getPositionVertice() { return {pos_x, pos_y, pos_z, 1}; }
 
   void lookAt(double fx, double fy, double fz, double tx, double ty, double tz) {
     // https://stackoverflow.com/a/33790309

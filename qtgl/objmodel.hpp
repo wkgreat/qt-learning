@@ -49,6 +49,8 @@ class ObjMaterial {
       material->setIllumination(IlluminationModel::LAMBERTIAN);
     } else if (illum == 2) {
       material->setIllumination(IlluminationModel::LAMBERTIAN_BLINN_PHONG);
+    } else {
+      material->setIllumination(IlluminationModel::LAMBERTIAN_BLINN_PHONG);
     }
     if (!map_ka.empty()) {
       GLTexture* t = new InterpolateGLTexture(dirpath + "/" + map_ka);

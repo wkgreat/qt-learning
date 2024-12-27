@@ -57,11 +57,9 @@ class GLObject {
     this->vertices = AffineUtils::scale(this->vertices, x, y, z);
   }
   virtual void prepareTransform() = 0;
-  virtual void transformWithMatrix(Eigen::Matrix4d& mtx) = 0;
+  virtual void transformVerticesWithMatrix(Eigen::Matrix4d& mtx) = 0;
   virtual void transformWithModelMatrix() = 0;
   virtual void draw(QPainter& painter) = 0;
-  virtual void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
-                             Vertice& cameraPos) = 0;
   virtual void rasterize(GLScene& scene) = 0;
 };
 
@@ -124,14 +122,12 @@ class GLMeshGroup : public GLObject {
     // TODO
   }
 
-  void transformWithMatrix(Eigen::Matrix4d& mtx) {
+  void transformVerticesWithMatrix(Eigen::Matrix4d& mtx) {
     // TODO
   }
   void transformWithModelMatrix() {
     // TODO
   }
-
-  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
   void rasterize(GLScene& scene);
 
@@ -163,7 +159,6 @@ class GLMesh : public GLObject {
   Normals transfromedNormals;
   TexCoords texcoords;
   std::map<std::string, GLMeshGroup*> groups;
-  // std::map<std::string, GLTexture*> textures;
   std::map<std::string, GLMaterial*> materials;
 
  public:
@@ -197,7 +192,6 @@ class GLMesh : public GLObject {
       p->groups[g.first]->setParent(p);
     }
     p->texcoords = this->texcoords;
-    // p->textures = this->textures;
     p->materials = this->materials;  // TODO deepcopy?
     p->modelMatrix = this->modelMatrix;
     p->transfromedVertices = this->transfromedVertices;
@@ -216,13 +210,6 @@ class GLMesh : public GLObject {
   Normals& getNormals() { return normals; }
   Normals& getTransformedNormals() { return transfromedNormals; }
   TexCoords& getTexCoords() { return texcoords; }
-  // GLTexture* getTexture(std::string& name) {
-  //   if (textures.count(name)) {
-  //     return textures[name];
-  //   } else {
-  //     return nullptr;
-  //   }
-  // }
   GLMaterial* getMaterial(std::string name) {
     if (materials.count(name)) {
       return materials[name];
@@ -298,18 +285,18 @@ class GLMesh : public GLObject {
     this->transfromedNormals = this->normals;
   }
 
-  void transformWithMatrix(Eigen::Matrix4d& mtx) {
+  void transformVerticesWithMatrix(Eigen::Matrix4d& mtx) {
     this->transfromedVertices = AffineUtils::affine(this->transfromedVertices, mtx);
-    Eigen::Matrix3d m = mtx.block(0, 0, 3, 3);
+  }
+  void transformWithModelMatrix() {
+    this->transfromedVertices = AffineUtils::affine(this->transfromedVertices, this->modelMatrix);
+    Eigen::Matrix3d m = this->modelMatrix.block(0, 0, 3, 3);
     this->transfromedNormals = AffineUtils::norm_affine(this->transfromedNormals, m);
   }
-  void transformWithModelMatrix() { transformWithMatrix(this->modelMatrix); }
 
   static GLMesh* readFromObjFile(std::string fpath);
 
   static GLMesh* fromObjModel(ObjModel* model);
-
-  void shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos);
 
   void rasterize(GLScene& scene);
 

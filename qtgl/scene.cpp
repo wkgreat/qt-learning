@@ -28,12 +28,12 @@ void GLScene::meshTransformToScreen(GLObject* obj) {
   // 模型变换
   obj->transformWithModelMatrix();
   // 视图变换 + 投影变换 + 视口变换
-  obj->transformWithMatrix(this->transformMatrix);
+  obj->transformVerticesWithMatrix(this->transformMatrix);
 }
 
 void GLScene::draw(QPainter& painter) {
   fragments = initFragmentsBuffer();  // TODO clear rather than init new
-  Vertice cameraPos{camera.getPosX(), camera.getPosY(), camera.getPosZ(), 0};
+
   for (GLObject* obj : objs) {
     meshTransformToScreen(obj);
     obj->rasterize(*this);

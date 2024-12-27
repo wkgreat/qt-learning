@@ -6,42 +6,6 @@ void GLMeshGroup::addIndex3(Index3 idx) {
   addIndex3(idx, GLMesh::defaultColor, GLMesh::defaultColor, GLMesh::defaultColor);
 }
 
-void GLMeshGroup::shadeVertices(GLShader* shader, std::vector<GLLight*>& lights,
-                                Vertice& cameraPos) {
-  // int n = indices.rows();
-  // if (parent->getNormals().rows() == 0 || normIndices.rows() == 0) {  // 无法线信息
-  //   return;
-  // }
-  // for (int i = 0; i < n; ++i) {
-  //   Index3 idx = indices.row(i);
-  //   Vertice p0 = parent->getTransformedVertices().row(idx[0]);
-  //   Vertice p1 = parent->getTransformedVertices().row(idx[1]);
-  //   Vertice p2 = parent->getTransformedVertices().row(idx[2]);
-  //   Eigen::Vector3d e0 = (cameraPos.head(3) - p0.head(3)).normalized();
-  //   Eigen::Vector3d e1 = (cameraPos.head(3) - p1.head(3)).normalized();
-  //   Eigen::Vector3d e2 = (cameraPos.head(3) - p2.head(3)).normalized();
-  //   NormIndex normIdx = normIndices.row(i);
-  //   Normal n0 = parent->getTransformedNormals().row(normIdx[0]).normalized();
-  //   Normal n1 = parent->getTransformedNormals().row(normIdx[1]).normalized();
-  //   Normal n2 = parent->getTransformedNormals().row(normIdx[2]).normalized();
-  //   Color01 d0 = colors[i][0];
-  //   Color01 d1 = colors[i][1];
-  //   Color01 d2 = colors[i][2];
-  //   Color01 c0{0, 0, 0, 0}, c1{0, 0, 0, 0}, c2{0, 0, 0, 0};
-  //   for (GLLight* lgt : lights) {
-  //     c0 = c0 + shader->shade(lgt, n0, p0, e0, d0);
-  //     c1 = c1 + shader->shade(lgt, n1, p1, e1, d1);
-  //     c2 = c2 + shader->shade(lgt, n2, p2, e2, d2);
-  //   }
-  //   c0.clamp();
-  //   c1.clamp();
-  //   c2.clamp();
-  //   colors[i][0] = c0;
-  //   colors[i][1] = c1;
-  //   colors[i][2] = c2;
-  // }
-}
-
 void GLMeshGroup::rasterize(GLScene& scene) {
   int n = indices.rows();
   for (int i = 0; i < n; ++i) {
@@ -51,9 +15,9 @@ void GLMeshGroup::rasterize(GLScene& scene) {
     Vertice p0 = parent->getTransformedVertices().row(idx[0]);
     Vertice p1 = parent->getTransformedVertices().row(idx[1]);
     Vertice p2 = parent->getTransformedVertices().row(idx[2]);
-    Normal n0 = parent->getTransformedNormals().row(normIdx[0]);
-    Normal n1 = parent->getTransformedNormals().row(normIdx[1]);
-    Normal n2 = parent->getTransformedNormals().row(normIdx[2]);
+    Normal n0 = parent->getTransformedNormals().row(normIdx[0]).normalized();
+    Normal n1 = parent->getTransformedNormals().row(normIdx[1]).normalized();
+    Normal n2 = parent->getTransformedNormals().row(normIdx[2]).normalized();
 
     GLMaterial* material = parent->getMaterial(ref.mtlname);
 
@@ -101,24 +65,20 @@ void GLMeshGroup::rasterizeTriangle(GLScene& scene, Triangle2& t, std::vector<Co
 
           if (model == IlluminationModel::CONSTANT) {
             color = material->getDiffuse();
-          } else if (model == IlluminationModel::LAMBERTIAN) {
-            // TODO
-            color = coord.alpha * clrs[0] + coord.beta * clrs[1] + coord.gamma * clrs[2];
+          } else {
+            GLShader* shader = scene.getShader(IlluminationModel::LAMBERTIAN_BLINN_PHONG);  // TODO
+            Vertice screenPos(x, y, depth, 1);
+            Vertice worldPos = scene.screenVerticeBackToWorldVertice(screenPos);
+            Normal uvNormal = (coord.alpha * t.getNormal0() + coord.beta * t.getNormal1() +
+                               coord.gamma * t.getNormal2())
+                                  .normalized();
+            Normal uvView =
+                (scene.getCamera().getPositionVertice().head(3) - worldPos.head(3)).normalized();
+            TexCoord txtcoord =
+                GLTexture::interpolateTexCoord(t, coord.alpha, coord.beta, coord.gamma);
 
-            if (t.getHasTexture() && texture) {
-              TexCoord tc = texture->interpolateTexCoord(t, coord.alpha, coord.beta, coord.gamma);
-              Color01 texColor = texture->sample(tc);
-              color = color.cwiseProduct(texColor);
-            }
-          } else if (model == IlluminationModel::LAMBERTIAN_BLINN_PHONG) {
-            // TODO
-            color = coord.alpha * clrs[0] + coord.beta * clrs[1] + coord.gamma * clrs[2];
-
-            if (t.getHasTexture() && texture) {
-              TexCoord tc = texture->interpolateTexCoord(t, coord.alpha, coord.beta, coord.gamma);
-              Color01 texColor = texture->sample(tc);
-              color = color.cwiseProduct(texColor);
-            }
+            color = shader->shade(scene.getLights(), scene.getAmbient(), material, worldPos,
+                                  uvNormal, uvView, &txtcoord);
           }
 
           fragments[y][x].color = color;
@@ -131,12 +91,6 @@ void GLMeshGroup::rasterizeTriangle(GLScene& scene, Triangle2& t, std::vector<Co
 
 const Color01 GLMesh::defaultColor = {1, 1, 1, 1};
 const std::string GLMesh::defaultGroup = "default";
-
-void GLMesh::shadeVertices(GLShader* shader, std::vector<GLLight*>& lights, Vertice& cameraPos) {
-  for (auto g : groups) {
-    (g.second)->shadeVertices(shader, lights, cameraPos);
-  }
-}
 
 void GLMesh::rasterize(GLScene& scene) {
   for (auto g : groups) {
