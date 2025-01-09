@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <map>
 #include <string>
 #include "define.hpp"
@@ -154,6 +155,46 @@ class ObjModel {
     TexCoord t(u, v);
     texcoords.conservativeResize(texcoords.rows() + 1, texcoords.cols());
     texcoords.row(texcoords.rows() - 1) = t;
+  }
+
+  void setVertices(std::list<double>& vs) {
+    size_t rows = vs.size() / 3;
+    vertices.conservativeResize(rows, 4);
+    int r = 0;
+    auto p = vs.begin();
+    Vertice v;
+    while (p != vs.end()) {
+      v[0] = *p++;
+      v[1] = *p++;
+      v[2] = *p++;
+      v[3] = 1;
+      vertices.row(r++) = v;
+    }
+  }
+  void setNormals(std::list<double>& ns) {
+    size_t rows = ns.size() / 3;
+    normals.conservativeResize(rows, 3);
+    int r = 0;
+    auto p = ns.begin();
+    Normal n;
+    while (p != ns.end()) {
+      n[0] = *p++;
+      n[1] = *p++;
+      n[2] = *p++;
+      normals.row(r++) = n;
+    }
+  }
+  void setTexcoords(std::list<double>& ts) {
+    size_t rows = ts.size() / 2;
+    texcoords.conservativeResize(rows, 2);
+    int r = 0;
+    auto p = ts.begin();
+    TexCoord t;
+    while (p != ts.end()) {
+      t[0] = *p++;
+      t[1] = *p++;
+      texcoords.row(r++) = t;
+    }
   }
 
   ObjModelGroup& getGroup(std::string& name) {

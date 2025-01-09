@@ -2,8 +2,10 @@
 
 #include <QGridLayout>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QSlider>
 #include <QTimer>
+#include <QWheelEvent>
 #include <QWidget>
 #include <functional>
 #include "scene.hpp"
@@ -45,6 +47,16 @@ class GLRenderWidget : public QWidget {
     painter.eraseRect(0, 0, this->width(), this->height());  // 清除画布
     scene.draw(painter);
   }
+
+  void mousePressEvent(QMouseEvent* event) override {
+    QPoint pos = event->pos();
+    std::cout << "MOUSE PRESS: " << pos.x() << "," << pos.y() << std::endl;
+  }
+  void mouseMoveEvent(QMouseEvent* event) override {
+    QPoint pos = event->pos();
+    std::cout << "MOUSE MOVE: " << pos.x() << "," << pos.y() << std::endl;
+  }
+  void wheelEvent(QWheelEvent* event) override { std::cout << "WHEEL EVENT!" << std::endl; }
 };
 
 class GLPointLightHelper : public QWidget {

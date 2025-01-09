@@ -23,13 +23,13 @@ struct PointGLLight : public GLLight {
 };
 
 struct GLShader {
-  virtual Color01 shade(std::vector<GLLight*> lights, Color01 ambient, GLMaterial* material,
+  virtual Color01 shade(std::vector<GLLight*>& lights, Color01 ambient, GLMaterial* material,
                         Vertice& position, Eigen::Vector3d& uvNormal, Eigen::Vector3d& uvView,
                         TexCoord* coord) = 0;
 };
 
 struct LambertianGLShader : public GLShader {
-  Color01 shade(std::vector<GLLight*> lights, Color01 ambient, GLMaterial* material,
+  Color01 shade(std::vector<GLLight*>& lights, Color01 ambient, GLMaterial* material,
                 Vertice& position, Eigen::Vector3d& uvNormal, Eigen::Vector3d& uvView,
                 TexCoord* coord) {
     Eigen::Vector3d uvLight;
@@ -45,7 +45,7 @@ struct LambertianGLShader : public GLShader {
   }
 };
 struct LambertialBlinnPhongGLShader : public GLShader {
-  Color01 shade(std::vector<GLLight*> lights, Color01 ambient, GLMaterial* material,
+  Color01 shade(std::vector<GLLight*>& lights, Color01 ambient, GLMaterial* material,
                 Vertice& position, Eigen::Vector3d& uvNormal, Eigen::Vector3d& uvView,
                 TexCoord* coord) {
     Eigen::Vector3d uvLight;

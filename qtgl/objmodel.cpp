@@ -83,6 +83,10 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
   std::string line;
   int i = 0;
 
+  std::list<double> verticeLst;
+  std::list<double> normalLst;
+  std::list<double> texcoordLst;
+
   while (getline(ifs, line)) {
     if (i++ % 1000 == 0) {
       std::cout << "loadObj: " << i << std::endl;
@@ -90,7 +94,12 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
     QString qline = QString::fromStdString(line);
     if (qline.startsWith("v ")) {  // vertex
       QStringList strlst = qline.split(QRegExp("\\s+"));
-      model->pushVertice(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
+
+      // model->pushVertice(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
+      verticeLst.push_back(strlst[1].toDouble());
+      verticeLst.push_back(strlst[2].toDouble());
+      verticeLst.push_back(strlst[3].toDouble());
+
     } else if (qline.startsWith("f ")) {  // face
 
       QStringList strlst = qline.split(QRegExp("\\s+"));
@@ -110,7 +119,7 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
         }
       }
       Index3 idx{vi[0], vi[1], vi[2]};
-      model->addIndex3(group, idx);
+      model->addIndex3(group, idx);  // TODO optimize
 
       if (!ti.empty()) {
         Eigen::Vector3i texidx{ti[0], ti[1], ti[2]};
@@ -119,7 +128,7 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
 
       if (!ni.empty()) {
         NormIndex normidx{ni[0], ni[1], ni[2]};
-        model->addNormIndex(group, normidx);
+        model->addNormIndex(group, normidx);  // TODO optimize
       }
     } else if (qline.startsWith("g ")) {  // group
       QStringList lst = qline.trimmed().split(QRegExp("\\s+"));
@@ -133,10 +142,19 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
 
     } else if (qline.startsWith("vn")) {  // normal
       QStringList strlst = qline.split(QRegExp("\\s+"));
-      model->pushNormal(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
+
+      // model->pushNormal(strlst[1].toDouble(), strlst[2].toDouble(), strlst[3].toDouble());
+      normalLst.push_back(strlst[1].toDouble());
+      normalLst.push_back(strlst[2].toDouble());
+      normalLst.push_back(strlst[3].toDouble());
+
     } else if (qline.startsWith("vt")) {  // texture
       QStringList strlst = qline.split(QRegExp("\\s+"));
-      model->pushTexCoord(strlst[1].toDouble(), strlst[2].toDouble());
+
+      // model->pushTexCoord(strlst[1].toDouble(), strlst[2].toDouble());
+      texcoordLst.push_back(strlst[1].toDouble());
+      texcoordLst.push_back(strlst[2].toDouble());
+
     } else if (qline.startsWith("#")) {
       continue;  // do nothing
     } else if (qline.startsWith("mtllib")) {
@@ -151,6 +169,10 @@ ObjModel* ObjModel::loadObj(const std::string& objpath) {
       mtl = lst[1].toStdString();
     }
   }
+
+  model->setVertices(verticeLst);
+  model->setNormals(normalLst);
+  model->setTexcoords(texcoordLst);
 
   ifs.close();
   return model;

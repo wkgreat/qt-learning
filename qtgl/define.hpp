@@ -210,13 +210,19 @@ class Triangle2 {
     double gamma;
   };
 
-  // 求解重心坐标
+  // 求解重心坐标 
   BarycentricCoordnates resovleBarycentricCoordnates(double x, double y) {
     BarycentricCoordnates coord;
     coord.alpha = f12(x, y) / f_alpha;
     coord.beta = f20(x, y) / f_beta;
-    coord.gamma = f01(x, y) / f_gamma;
+    // coord.gamma = f01(x, y) / f_gamma;
+    coord.gamma = 1 - coord.alpha - coord.beta;
     return coord;
+  }
+
+  // https://gamedev.stackexchange.com/a/23745
+  BarycentricCoordnates resovleBarycentricCoordnates_fast(Vertice p) {
+    // TODO
   }
 };
 
